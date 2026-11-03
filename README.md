@@ -1,9 +1,9 @@
-# [Project Name]
+# [Broadway Concierge]
 
-> **One-line pitch:** [Who is this for, and what job does it do for them?]
+> **One-line pitch:** [Broadway Concierge helps first-time and budget-conscious theatergoers pick the right show for their group and spot ticket scams in Facebook and forum resale listings before they pay.]
 
-- **Builder:** [Your Name] (`@github-handle`)
-- **Pod:** [Pod Name / Number]
+- **Builder:** [Ciara Butler] (`@ciaralbutler`)
+- **Pod:** [Pod 13]
 - **Product Page & Living PRD:** [Add your GitHub Pages URL]
 - **App:** runs locally through Week 4; add a cloud URL in Build 5.
 
