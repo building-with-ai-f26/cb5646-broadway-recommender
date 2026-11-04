@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>[Your Product Name] · Building with AI (Fall 2026)</title>
+  <title>[Broadway Concierge] · Building with AI (Fall 2026)</title>
 
   <!-- Week 1: create your PostHog account only.
        Build 2: paste your project's current PostHog web snippet here,
@@ -144,8 +144,8 @@
     <!-- HERO / PRODUCT PITCH -->
     <header>
       <span class="eyebrow">NYU Stern · Building with AI · Fall 2026</span>
-      <h1>[Your Product Name]</h1>
-      <p class="tagline">[One clear sentence: Who is this for, and what painful job does it do for them?]</p>
+      <h1>[Broadway Concierge]</h1>
+      <p class="tagline">[Broadway Concierge helps first-time and budget-conscious theatergoers pick the right show for their group and spot ticket scams before they pay.]</p>
       <div class="cta-row">
         <a class="btn" href="#live-demo" onclick="window.posthog && posthog.capture('clicked_try_product')">See the Product →</a>
         <a class="btn btn-secondary" href="#prd">Read the Living PRD</a>
@@ -171,20 +171,33 @@
       <p class="meta">Updated every week as we test with real users and learn what works.</p>
 
       <h3>1. Target User & The Job to Be Done</h3>
-      <p><strong>Who is this for?</strong> [Name a specific, reachable person or role you have direct access to.]</p>
-      <p><strong>The painful "Before" workflow:</strong> [How do they do this today, and why is it slow, manual, or broken?]</p>
-      <p><strong>The "After" workflow with this product:</strong> [What does your tool do for them in one sitting?]</p>
+      <p><strong>Who is this for?</strong> [Broadway Concierge is for people planning a theater night who don’t know the shows well and are watching their budget]</p>
+      <p><strong>The painful "Before" workflow:</strong> [Choosing a show: People piece it together from reviews, Reddit, YouTube, and friends. No single source accounts for their group, budget, and taste, so they cross-check several tabs. General chatbots can also suggest shows that have already closed.
+
+Buying tickets: Official sellers are safe but can be pricey or sold out. So budget buyers turn to Facebook groups and forums, where nothing is verified. They check listings by instinct (seller profile, screenshots, “does this row exist?”), and scammers push payment methods with no protection, like Zelle, gift cards, and crypto. Once the money is sent, it’s gone.
+
+The gap: Recommendations ignore ticket-buying reality, and resale groups give no help judging a listing.]</p>
+      <p><strong>The "After" workflow with this product:</strong> [Describe the night. The user types something like “Taking my mom, we loved Wicked, hate jukebox musicals, $150 max.”
+Get 3 picks. The tool returns three shows from the catalog, each with why it fits, one honest caution, and a typical price range.
+Find tickets. The user picks a show and checks official sources or resale groups.
+Paste any resale listing. If they find a cheap one, they paste it into the checker.
+Get a verdict. The tool returns a risk rating (low, medium, or high) and the specific red flags, such as “Zelle only,” “price far below face value,” or “Row ZZ doesn’t exist at this theater.”
+Decide. They buy with confidence, walk away from the scam, or switch to an official seller.]</p>
 
       <h3>2. Scope & Explicit Non-Goals</h3>
       <ul>
-        <li><strong>In Scope (Core Workflow):</strong> [The 1 main workflow this product does reliably]</li>
-        <li><strong>Out of Scope #1:</strong> [Feature you are deliberately NOT building in 6 weeks]</li>
-        <li><strong>Out of Scope #2:</strong> [Feature you are deliberately NOT building in 6 weeks]</li>
-        <li><strong>Out of Scope #3:</strong> [Feature you are deliberately NOT building in 6 weeks]</li>
+        <li><strong>In Scope (Core Workflow):</strong> [In scope (the one workflow): describe your night (group, mood, budget) and get 3 shows that fit, with why each fits, one honest caution, and a typical price range.
+
+The tool picks only from a hand-built catalog of currently running shows. It respects stated limits like budget, age, and dislikes (for example “hate jukebox musicals”).
+
+Secondary feature: paste a resale listing and get a low, medium, or high risk rating with the specific red flags. This is the “before you pay” safety check once they’ve picked a show.]</li>
+        <li><strong>Out of Scope #1:</strong> [Live prices or inventory buying tickets or messaging sellers]</li>
+        <li><strong>Out of Scope #2:</strong> [Scraping Facebook or forums]</li>
+        <li><strong>Out of Scope #3:</strong> [Buying tickets or messaging sellers]</li>
       </ul>
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
-      <p><strong>Riskiest Assumption:</strong> [What is the #1 technical or user risk that could sink this product?]</p>
+      <p><strong>Riskiest Assumption:</strong> [Broadway Concierge takes a user’s request, loads a hand-built catalog of running shows, and sends both to the Claude API, which picks three fits with a reason, a caution, and a typical price. The same pattern powers the secondary resale checker, which compares a pasted listing against a red-flag checklist and theater seating info. There’s no database and no live data, so the riskiest assumption is that the catalog is accurate and current enough to trust. Closed shows, stale prices, or wrong content warnings would sink user confidence, so verify every show and test with a few sample requests.]</p>
       <p><strong>Simple Architecture:</strong> [User Input] → [Your App / Server] → [AI Model / Tool] → [Output]</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
@@ -216,10 +229,11 @@
       <div class="log-entry">
         <h3>Build 1 · Intent.md & Throwaway Prototype (Due Nov 9)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [What you actually built; link your local prototype screenshot or GIF above.]</li>
-          <li><strong>Things learned with AI:</strong> [What you learned from AI practice and Terminus Episodes 1 and 2.]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>What shipped:</strong> [PRD v1, prototype in Claude: .]</li>
+          <li><strong>Things learned with AI:</strong> [not bullet points, sentences
+The Terminal lets you control your computer by typing commands instead of clicking. Git tracks changes to your project and saves snapshots called commits. GitHub stores your project online so you can share and collaborate with others.]</li>
+          <li><strong>What broke / changed in PRD:</strong> [Established Terminal, downloaded Github and tried to link the two, integrated Claude Code, began building v1 of prototype]</li>
+          <li><strong>Cost & time this week:</strong> $[21.78] · [4] hours</li>
         </ul>
       </div>
 
