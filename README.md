@@ -4,7 +4,7 @@
 
 - **Builder:** [Ciara Butler] (`@ciaralbutler`)
 - **Pod:** [Pod 13]
-- **Product Page & Living PRD:** [Add your GitHub Pages URL]
+- **Product Page & Living PRD:** [[(https://building-with-ai-f26.github.io/cb5646-broadway-recommender/)]
 - **App:** runs locally through Week 4; add a cloud URL in Build 5.
 
 ## Start here: Build 1
