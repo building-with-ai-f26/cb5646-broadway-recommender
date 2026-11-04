@@ -113,4 +113,8 @@ def run_live():
 
 
 if __name__ == "__main__":
-    sys.exit(1 if (run_live() if "--live" in sys.argv else run_offline()) else 0)
+    try:
+        failed = run_live() if "--live" in sys.argv else run_offline()
+    except RuntimeError as e:  # e.g. missing ANTHROPIC_API_KEY
+        sys.exit(str(e))
+    sys.exit(1 if failed else 0)
