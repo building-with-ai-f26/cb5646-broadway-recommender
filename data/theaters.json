@@ -1,0 +1,9 @@
+{
+  "_note": "APPROXIMATE. TODO: confirm sections and row ranges against each theater's official seat map. The scam checker uses this to flag seats that don't exist.",
+  "theaters": {
+    "Gershwin Theatre": {"sections": ["Orchestra","Front Mezzanine","Rear Mezzanine"], "rows": "Orchestra roughly A-ZZ range varies; mezzanines roughly A-N"},
+    "Lyric Theatre": {"sections": ["Orchestra","Mezzanine","Balcony"], "rows": "Orchestra roughly A-Z; Mezzanine roughly A-H; Balcony roughly A-J"},
+    "Eugene O'Neill Theatre": {"sections": ["Orchestra","Mezzanine"], "rows": "Orchestra roughly A-S; Mezzanine roughly A-F. No box seats or 'Royal Balcony'."},
+    "Stephen Sondheim Theatre": {"sections": ["Orchestra","Mezzanine"], "rows": "Orchestra roughly A-S; Mezzanine roughly A-H"}
+  }
+}
