@@ -173,7 +173,8 @@
       <p class="meta">Updated every week as we test with real users and learn what works.</p>
 
       <h3>1. Target User & The Job to Be Done</h3>
-      <p><strong>Who is this for?</strong> Broadway Concierge is for people planning a theater night who don’t know the shows well and are watching their budget</p>
+      <p><strong>Who is this for?</strong> Anne, a knowledgeable, engaged theatergoer who sees shows regularly but has limited money, time and planning bandwidth. Anne cares more about finding the right show than the most popular one: something with strong writing, a memorable score and an emotional payoff. Anne already puts in the effort, reading reviews, playing cast recordings and entering lotteries, but that research is scattered across many apps and sites. Anne often chooses for a partner, friend or family member too.</p>
+      <p><strong>What Anne needs from it:</strong> a recommender that knows Anne's taste, respects budget and schedule, flags deals and closing dates, and points to shows Anne would love but would otherwise miss.</p>
       <p><strong>The painful "Before" workflow:</strong> Choosing a show: People piece it together from reviews, Reddit, YouTube, and friends. No single source accounts for their group, budget, and taste, so they cross-check several tabs. General chatbots can also suggest shows that have already closed.
 
 Buying tickets: Official sellers are safe but can be pricey or sold out. So budget buyers turn to Facebook groups and forums, where nothing is verified. They check listings by instinct (seller profile, screenshots, “does this row exist?”), and scammers push payment methods with no protection, like Zelle, gift cards, and crypto. Once the money is sent, it’s gone.
@@ -242,12 +243,13 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
         <h3>Build 2 · Smallest Local Version & PostHog (Due Nov 16)</h3>
         <ul>
           <li><strong>What shipped (as of Nov 13):</strong> The catalog grew from 8 to 34 shows running or opening now, checked against Broadway Direct's what's-on guide. A browser version of the recommender (<a href="app/">app/</a>) that applies the same hard rules and can optionally ask Claude to pick. 27 offline checks in <code>web/test_core.js</code> plus the existing Python tests, all passing. Real run and test commands in <code>AGENTS.md</code>. Merged in pull request #1.<br />
-          <strong>Still open before Nov 16:</strong> run the Streamlit app with my own API key and screenshot the picks, install PostHog, name a real first user, and write PRD v2.</li>
+          <strong>Still open before Nov 16:</strong> run the Streamlit app with my own API key and screenshot the picks, install PostHog, and write PRD v2.</li>
           <li><strong>What broke / changed in PRD:</strong>
             <ul>
               <li>The riskiest assumption was real. The old catalog covered 8 of the 34 shows now listed, and some shows are closing soon (Maybe Happy Ending tickets are on sale only through Nov 22; School Girls is listed as leaving this month). Entries now carry a note field for closing dates, and ages, content notes and most prices are labeled as estimates on the page.</li>
               <li>The text reader treated "I hate jukebox musicals, and we want to laugh" as a dislike of comedy, because the word "hate" reached across the comma. Found by running the example request in a browser; fixed by ending the dislike at a comma or "but", with a test.</li>
               <li>A family night with no kids' ages entered could return a show meant for ages 13 and up. Now the ranker leans toward school-age shows when kids are mentioned and says so under the picks.</li>
+              <li>Named the target user: Anne, a knowledgeable regular theatergoer, in place of the broader "first-timer who doesn't know the shows" description. The pitch and before/after workflow below still describe first-timers and are next to align. Anne also wants taste memory, schedule and deal alerts, which the product does not do yet; closing-date notes are the only part built.</li>
               <li>The test suite used Hamilton as its made-up show, which stopped working once Hamilton was a real entry in the catalog.</li>
               <li>Cost per request went up about 2.3 times, from roughly $0.009 to $0.02, because the Python app sends every eligible show to Claude. The browser version sends only the top 10.</li>
             </ul>
