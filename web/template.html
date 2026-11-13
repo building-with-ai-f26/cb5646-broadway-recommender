@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Broadway Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a playbill. Marquee-bulb header, a form on the left, ticket-stub results on the right. */
+:root {
+  --bg: #f3eff7; --surface: #ffffff; --ink: #1c1426; --muted: #665b73; --line: #d8cfe3;
+  --accent: #a3112c; --accent-ink: #ffffff; --soft: #ece6f3; --bulb: #e0a01a;
+  --good: #1b6b44; --warn: #8a4b00;
+  --font-display: "Bodoni Moda", Didot, "Bodoni 72", Georgia, serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #140e1a; --surface: #1f1628; --ink: #f4eef9; --muted: #aa9db8; --line: #3b2d49;
+    --accent: #ff5470; --accent-ink: #1c0a10; --soft: #2a1f36; --bulb: #ffc04d;
+    --good: #5fd39a; --warn: #ffb35c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #140e1a; --surface: #1f1628; --ink: #f4eef9; --muted: #aa9db8; --line: #3b2d49;
+  --accent: #ff5470; --accent-ink: #1c0a10; --soft: #2a1f36; --bulb: #ffc04d;
+  --good: #5fd39a; --warn: #ffb35c; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--font-body); -webkit-text-size-adjust: 100%; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 48px; }
+
+/* Header marquee */
+.marquee { position: relative; padding: 34px 0 30px; text-align: center; }
+.marquee::before, .marquee::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 12px;
+  background: radial-gradient(circle, var(--bulb) 0 3.5px, transparent 4.5px) 0 50% / 22px 12px repeat-x;
+}
+.marquee::before { top: 8px; }
+.marquee::after { bottom: 0; animation: chase 1.6s steps(1) infinite; }
+.marquee .bulbs-alt { position: absolute; left: 0; right: 0; top: 8px; height: 12px;
+  background: radial-gradient(circle, var(--bulb) 0 3.5px, transparent 4.5px) 11px 50% / 22px 12px repeat-x; opacity: .45; }
+@keyframes chase { 50% { opacity: .45; } }
+.marquee h1 { font: 700 clamp(2.4rem, 7vw, 4.4rem)/1 var(--font-display); letter-spacing: -.01em; }
+.marquee h1 em { font-style: italic; font-weight: 500; color: var(--accent); }
+.marquee p { margin: 12px auto 0; max-width: 46ch; color: var(--muted); font-size: 1.05rem; }
+
+/* Two-column app */
+.app { display: grid; grid-template-columns: minmax(0, 390px) minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 26px; }
+@media (max-width: 860px) { .app { grid-template-columns: 1fr; } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+.panel h2 { font: 700 1.35rem/1.2 var(--font-display); margin-bottom: 4px; }
+.hint { color: var(--muted); font-size: .9rem; margin: 0 0 14px; }
+
+label.field, .legend { display: block; font-weight: 600; font-size: .92rem; margin: 18px 0 6px; }
+textarea { width: 100%; min-height: 104px; resize: vertical; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: 10px; background: var(--bg); line-height: 1.45; }
+input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+fieldset { border: 0; padding: 0; margin: 18px 0 0; min-width: 0; }
+fieldset > .legend { margin: 0 0 6px; padding: 0; }
+
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; }
+.choice input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.choice span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--bg); font-size: .92rem; transition: background .15s, border-color .15s; }
+.choice input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.choice input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.choice.box span { border-radius: 10px; }
+
+.budget { display: flex; align-items: center; gap: 12px; }
+.budget input[type="range"] { flex: 1; accent-color: var(--accent); min-width: 0; }
+.budget output { min-width: 4.2ch; font-weight: 700; font-variant-numeric: tabular-nums; }
+.check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .92rem; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+button.go { margin-top: 22px; width: 100%; min-height: 48px; border: 0; border-radius: 12px; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 1.02rem; }
+button.go:disabled { opacity: .6; cursor: progress; }
+.ai-row { margin-top: 16px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; }
+.ai-row small { display: block; color: var(--muted); margin-top: 2px; }
+
+/* Results */
+.results-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 14px; }
+.results-head h2 { font: 700 1.6rem/1.15 var(--font-display); }
+.source { font-size: .85rem; color: var(--muted); }
+.notice { background: var(--soft); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: .92rem; }
+.notice.warn { border-left: 4px solid var(--warn); }
+
+.stub { position: relative; display: grid; grid-template-columns: 74px minmax(0, 1fr); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 14px; margin-bottom: 16px; overflow: hidden; }
+.stub .num { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 12px 6px;
+  border-right: 2px dashed var(--line); background: var(--soft); }
+.stub .num b { font: 700 2.6rem/1 var(--font-display); color: var(--accent); }
+.stub .num small { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+.stub .body { padding: 16px 18px 16px; min-width: 0; }
+.stub h3 { font: 700 1.5rem/1.15 var(--font-display); }
+.stub .where { color: var(--muted); font-size: .92rem; margin: 2px 0 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip { font-size: .8rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--soft); border: 1px solid var(--line); }
+.chip.rush { color: var(--good); border-color: var(--good); background: transparent; }
+.chip.soon { color: var(--warn); border-color: var(--warn); background: transparent; }
+.chip.near { color: var(--warn); border-color: var(--warn); background: transparent; }
+.stub p { margin: 0 0 8px; }
+.stub .k { font-weight: 700; }
+.stub .fine { color: var(--muted); font-size: .84rem; margin-top: 10px; }
+.stub.near { border-color: var(--warn); }
+@media (max-width: 480px) { .stub { grid-template-columns: 52px minmax(0, 1fr); } .stub .num b { font-size: 2rem; } }
+
+.foot { margin-top: 10px; color: var(--muted); font-size: .85rem; max-width: 70ch; }
+.foot a { color: inherit; }
+.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -2px; margin-right: 8px; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .marquee::after, .spin { animation: none; } .choice span { transition: none; } }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="marquee">
+    <span class="bulbs-alt" aria-hidden="true"></span>
+    <h1>Broadway <em>Concierge</em></h1>
+    <p>Tell us about your night. Get three Broadway shows that fit your group, your mood and your budget.</p>
+  </header>
+
+  <main class="app">
+    <form class="panel" id="form" autocomplete="off">
+      <h2>Your night</h2>
+      <p class="hint">This is an example request. Change anything, then press Find my shows.</p>
+
+      <label class="field" for="text">Tell us about your night</label>
+      <textarea id="text" placeholder="Taking my mom for her birthday. We loved Wicked, I hate jukebox musicals, and we want to laugh.">Taking my mom for her birthday. We loved Wicked, I hate jukebox musicals, and we want to laugh.</textarea>
+
+      <fieldset>
+        <legend class="legend">Who is going?</legend>
+        <div class="choices" id="who"></div>
+      </fieldset>
+      <div id="kidsWrap" hidden>
+        <label class="field" for="kids">Kids' ages, if any</label>
+        <input type="text" id="kids" placeholder="for example 6, 10" inputmode="numeric">
+      </div>
+
+      <fieldset>
+        <legend class="legend">Mood</legend>
+        <div class="choices" id="mood"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="legend">Is this your first Broadway show?</legend>
+        <div class="choices" id="first"></div>
+      </fieldset>
+
+      <label class="field" for="budget">Most you will pay per ticket</label>
+      <div class="budget">
+        <input type="range" id="budget" min="40" max="400" step="10" value="150" aria-describedby="budgetOut">
+        <output id="budgetOut" for="budget">$150</output>
+      </div>
+      <label class="check"><input type="checkbox" id="noLimit"> No budget limit</label>
+
+      <fieldset>
+        <legend class="legend">Dealbreakers</legend>
+        <div class="choices" id="dealbreakers"></div>
+        <p class="hint" style="margin-top:8px">"Long runtime" means 2h45m or more. "No intermission" means you only want shows that run straight through.</p>
+      </fieldset>
+
+      <div class="ai-row" id="aiRow" hidden>
+        <label class="check" style="margin:0"><input type="checkbox" id="useAi" checked> Ask Claude to pick and explain</label>
+        <small>Your limits are applied first, so Claude only sees shows that fit. It runs on your Claude account and asks permission the first time.</small>
+      </div>
+
+      <button class="go" id="go" type="submit">Find my shows</button>
+    </form>
+
+    <section aria-live="polite" aria-label="Your recommendations">
+      <div id="results"></div>
+      <p class="foot" id="foot"></p>
+    </section>
+  </main>
+</div>
+
+<script>
+const SHOWS = /*__CATALOG__*/null;
+</script>
+<script>
+/*__CORE__*/
+</script>
+<script>
+(function () {
+  const R = window.Recommender;
+  const BY_TITLE = Object.fromEntries(SHOWS.map((s) => [s.title, s]));
+  const $ = (id) => document.getElementById(id);
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  // ---- build the choice controls
+  function choiceGroup(containerId, name, items, selected, cls) {
+    const box = $(containerId);
+    items.forEach(([value, label, type]) => {
+      const wrap = el("label", "choice" + (cls ? " " + cls : ""));
+      const input = document.createElement("input");
+      input.type = type || "radio";
+      input.name = name;
+      input.value = value;
+      if (type === "checkbox" ? selected.includes(value) : value === selected) input.checked = true;
+      wrap.append(input, el("span", "", label));
+      box.append(wrap);
+    });
+  }
+  choiceGroup("who", "who", [["", "Not sure"], ["solo", "Solo"], ["date", "Date"], ["friends", "Friends"], ["family", "Family"]], "family");
+  choiceGroup("mood", "mood", [["", "Any"], ["laugh", "Laugh"], ["cry", "Cry"], ["be wowed", "Be wowed"], ["sing along", "Sing along"], ["something different", "Something different"]], "laugh");
+  choiceGroup("first", "first", [["", "Not said"], ["yes", "Yes"], ["no", "No"]], "");
+  choiceGroup("dealbreakers", "db", R.DEALBREAKERS.map((d) => [d, d, "checkbox"]), ["jukebox"], "box");
+
+  const val = (name) => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
+  function syncForm() {
+    $("kidsWrap").hidden = val("who") !== "family";
+    $("budget").disabled = $("noLimit").checked;
+    $("budgetOut").textContent = $("noLimit").checked ? "None" : "$" + $("budget").value;
+  }
+  $("form").addEventListener("input", syncForm);
+  syncForm();
+
+  function readInput() {
+    return {
+      text: $("text").value.trim(),
+      who: val("who") || null,
+      kidsAges: $("kids").value,
+      mood: val("mood") || null,
+      maxPrice: $("noLimit").checked ? null : Number($("budget").value),
+      dealbreakers: [...document.querySelectorAll('input[name="db"]:checked')].map((i) => i.value),
+      firstShow: { yes: true, no: false }[val("first")] ?? null,
+    };
+  }
+
+  // ---- render results
+  function fmtDate(iso) {
+    return new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  function dollars(p) { return p.price_range.replace(/\$(\d+)-\$(\d+)/, "$$$1 to $$$2"); }
+
+  function stub(p, i) {
+    const show = BY_TITLE[p.title] || {};
+    const card = el("article", "stub" + (p.fits_all_limits ? "" : " near"));
+    const num = el("div", "num");
+    num.append(el("b", "", String(i + 1)), el("small", "", "pick"));
+    const body = el("div", "body");
+    body.append(el("h3", "", p.title), el("div", "where", p.theater));
+
+    const chips = el("div", "chips");
+    chips.append(el("span", "chip", p.genre === "play" ? "Play" : "Musical"));
+    chips.append(el("span", "chip", R.runtimeText(p)));
+    chips.append(el("span", "chip", p.age));
+    if (p.rush_or_lottery) chips.append(el("span", "chip rush", "Rush or lottery often available"));
+    if (p.status === "previews" && p.opens) chips.append(el("span", "chip soon", "In previews, opens " + fmtDate(p.opens).replace(/, \d{4}$/, "")));
+    if (!p.fits_all_limits) chips.append(el("span", "chip near", "Near miss"));
+    body.append(chips);
+
+    const why = el("p"); why.append(el("span", "k", "Why it fits: "), document.createTextNode(p.why_it_fits));
+    const heads = el("p"); heads.append(el("span", "k", "Heads up: "), document.createTextNode(p.caution));
+    const price = el("p"); price.append(el("span", "k", "Price: "), document.createTextNode(dollars(p)));
+    body.append(why, heads, price);
+
+    if (show.price_basis) body.append(el("p", "fine", "Price note: " + show.price_basis));
+    card.append(num, body);
+    return card;
+  }
+
+  function render(result, input, opts) {
+    const box = $("results");
+    box.replaceChildren();
+    const head = el("div", "results-head");
+    head.append(el("h2", "", "Your three shows"));
+    const src = result.source === "claude" ? "Picked by Claude from shows that already fit your limits"
+      : "Picked by the built-in ranker from shows that already fit your limits";
+    head.append(el("span", "source", src));
+    box.append(head);
+    if (opts && opts.example) box.append(el("div", "notice", "Showing results for the example request. Edit the form and press Find my shows for your own."));
+    if (result.message) box.append(el("div", "notice warn", result.message));
+    if (result.aiError) box.append(el("div", "notice", "Claude could not answer this time, so these picks come from the built-in ranker."));
+    result.picks.forEach((p, i) => box.append(stub(p, i)));
+    if (result.assumptions) box.append(el("div", "notice", "Assumptions: " + result.assumptions));
+  }
+
+  // ---- optional Claude step (only exists inside the Claude artifact viewer)
+  let sample = null;
+  if (window.claude && typeof window.claude.use === "function") {
+    Promise.resolve(window.claude.use("sample")).then((s) => {
+      if (typeof s === "function") { sample = s; $("aiRow").hidden = false; }
+    }).catch(() => {});
+  }
+  async function askClaude(system, user) {
+    const r = await sample(system + "\n\n" + user, { modelTier: "default", cache: false });
+    return r.text;
+  }
+
+  $("form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const input = readInput();
+    if (!input.text) {
+      $("results").replaceChildren(el("div", "notice warn", "Write a sentence or two about your night first."));
+      return;
+    }
+    const btn = $("go");
+    btn.disabled = true;
+    const useAi = sample && $("useAi").checked;
+    const label = btn.textContent;
+    btn.replaceChildren(el("span", "spin"), document.createTextNode(useAi ? "Asking Claude..." : "Picking your shows..."));
+    try {
+      const result = useAi ? await R.recommendWithAI(SHOWS, input, askClaude) : R.recommendLocal(SHOWS, input);
+      render(result, input);
+    } catch (e) {
+      render(R.recommendLocal(SHOWS, input), input);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+  });
+
+  // ---- footer and first view
+  const checked = fmtDate(SHOWS[0].last_verified.slice(0, 10));
+  const foot = $("foot");
+  foot.append(document.createTextNode(`${SHOWS.length} shows. Show, theater and runtime checked ${checked} against Broadway Direct's what's-on guide. Prices are typical ranges, not live, and ages and content notes are estimates, so confirm on the official seller before you buy. `));
+  const a = el("a", "", "Broadway Direct"); a.href = "https://broadwaydirect.com/"; a.target = "_blank"; a.rel = "noopener";
+  foot.append(a, document.createTextNode(" sells official tickets. "));
+  const b = el("a", "", "About this project"); b.href = "https://building-with-ai-f26.github.io/cb5646-broadway-recommender/"; b.target = "_blank"; b.rel = "noopener";
+  foot.append(b, document.createTextNode("."));
+
+  render(R.recommendLocal(SHOWS, readInput()), readInput(), { example: true });
+})();
+</script>
+</body>
+</html>
