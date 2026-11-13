@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>[Broadway Concierge] · Building with AI (Fall 2026)</title>
+  <title>Broadway Concierge · Building with AI (Fall 2026)</title>
 
   <!-- Week 1: create your PostHog account only.
        Build 2: paste your project's current PostHog web snippet here,
@@ -144,8 +144,8 @@
     <!-- HERO / PRODUCT PITCH -->
     <header>
       <span class="eyebrow">NYU Stern · Building with AI · Fall 2026</span>
-      <h1>[Broadway Concierge]</h1>
-      <p class="tagline">[Broadway Concierge helps first-time and budget-conscious theatergoers pick the right show for their group and spot ticket scams before they pay.]</p>
+      <h1>Broadway Concierge</h1>
+      <p class="tagline">Broadway Concierge helps first-time and budget-conscious theatergoers pick the right show for their group and spot ticket scams before they pay.</p>
       <div class="cta-row">
         <a class="btn" href="#live-demo" onclick="window.posthog && posthog.capture('clicked_try_product')">See the Product →</a>
         <a class="btn btn-secondary" href="#prd">Read the Living PRD</a>
@@ -157,13 +157,13 @@
     <section id="live-demo">
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
-        <strong>Current Status:</strong> Build 1: local prototype<br />
+        <strong>Current Status:</strong> Build 2 in progress: local Streamlit prototype plus a browser version<br />
         <strong>Demo:</strong> Screenshot of the local Streamlit show recommender form (results screenshot coming next).<br />
         <strong>Try it:</strong> <a href="app/">web version of the show recommender</a> (34 shows running as of Nov 13, 2026).
       </p>
       <img src="prototype.png" alt="Broadway Concierge local prototype: a text box for describing your night, plus who's going, mood, budget and dealbreaker options" style="max-width:100%; border:1px solid #e5e7eb; border-radius:8px;" />
       <p class="meta">
-        Ask your coding agent to embed a screenshot or GIF of your local prototype for Build 1. Keep this evidence current, then add your cloud app link and two-minute video in Build 5.
+        Next: run the Streamlit app with my own API key and add a screenshot of the picks it returns.
       </p>
     </section>
 
@@ -173,48 +173,48 @@
       <p class="meta">Updated every week as we test with real users and learn what works.</p>
 
       <h3>1. Target User & The Job to Be Done</h3>
-      <p><strong>Who is this for?</strong> [Broadway Concierge is for people planning a theater night who don’t know the shows well and are watching their budget]</p>
-      <p><strong>The painful "Before" workflow:</strong> [Choosing a show: People piece it together from reviews, Reddit, YouTube, and friends. No single source accounts for their group, budget, and taste, so they cross-check several tabs. General chatbots can also suggest shows that have already closed.
+      <p><strong>Who is this for?</strong> Broadway Concierge is for people planning a theater night who don’t know the shows well and are watching their budget</p>
+      <p><strong>The painful "Before" workflow:</strong> Choosing a show: People piece it together from reviews, Reddit, YouTube, and friends. No single source accounts for their group, budget, and taste, so they cross-check several tabs. General chatbots can also suggest shows that have already closed.
 
 Buying tickets: Official sellers are safe but can be pricey or sold out. So budget buyers turn to Facebook groups and forums, where nothing is verified. They check listings by instinct (seller profile, screenshots, “does this row exist?”), and scammers push payment methods with no protection, like Zelle, gift cards, and crypto. Once the money is sent, it’s gone.
 
-The gap: Recommendations ignore ticket-buying reality, and resale groups give no help judging a listing.]</p>
-      <p><strong>The "After" workflow with this product:</strong> [Describe the night. The user types something like “Taking my mom, we loved Wicked, hate jukebox musicals, $150 max.”
+The gap: Recommendations ignore ticket-buying reality, and resale groups give no help judging a listing.</p>
+      <p><strong>The "After" workflow with this product:</strong> Describe the night. The user types something like “Taking my mom, we loved Wicked, hate jukebox musicals, $150 max.”
 Get 3 picks. The tool returns three shows from the catalog, each with why it fits, one honest caution, and a typical price range.
 Find tickets. The user picks a show and checks official sources or resale groups.
 Paste any resale listing. If they find a cheap one, they paste it into the checker.
 Get a verdict. The tool returns a risk rating (low, medium, or high) and the specific red flags, such as “Zelle only,” “price far below face value,” or “Row ZZ doesn’t exist at this theater.”
-Decide. They buy with confidence, walk away from the scam, or switch to an official seller.]</p>
+Decide. They buy with confidence, walk away from the scam, or switch to an official seller.</p>
 
       <h3>2. Scope & Explicit Non-Goals</h3>
       <ul>
-        <li><strong>In Scope (Core Workflow):</strong> [In scope (the one workflow): describe your night (group, mood, budget) and get 3 shows that fit, with why each fits, one honest caution, and a typical price range.
+        <li><strong>In Scope (Core Workflow):</strong> In scope (the one workflow): describe your night (group, mood, budget) and get 3 shows that fit, with why each fits, one honest caution, and a typical price range.
 
 The tool picks only from a hand-built catalog of currently running shows. It respects stated limits like budget, age, and dislikes (for example “hate jukebox musicals”).
 
-Secondary feature: paste a resale listing and get a low, medium, or high risk rating with the specific red flags. This is the “before you pay” safety check once they’ve picked a show.]</li>
-        <li><strong>Out of Scope #1:</strong> [Live prices or inventory buying tickets or messaging sellers]</li>
-        <li><strong>Out of Scope #2:</strong> [Scraping Facebook or forums]</li>
-        <li><strong>Out of Scope #3:</strong> [Buying tickets or messaging sellers]</li>
+Secondary feature: paste a resale listing and get a low, medium, or high risk rating with the specific red flags. This is the “before you pay” safety check once they’ve picked a show.</li>
+        <li><strong>Out of Scope #1:</strong> Live prices or inventory buying tickets or messaging sellers</li>
+        <li><strong>Out of Scope #2:</strong> Scraping Facebook or forums</li>
+        <li><strong>Out of Scope #3:</strong> Buying tickets or messaging sellers</li>
       </ul>
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
-      <p><strong>Riskiest Assumption:</strong> [Broadway Concierge takes a user’s request, loads a hand-built catalog of running shows, and sends both to the Claude API, which picks three fits with a reason, a caution, and a typical price. The same pattern powers the secondary resale checker, which compares a pasted listing against a red-flag checklist and theater seating info. There’s no database and no live data, so the riskiest assumption is that the catalog is accurate and current enough to trust. Closed shows, stale prices, or wrong content warnings would sink user confidence, so verify every show and test with a few sample requests.]</p>
-      <p><strong>Simple Architecture:</strong> [User Input] → [Your App / Server] → [AI Model / Tool] → [Output]</p>
+      <p><strong>Riskiest Assumption:</strong> Broadway Concierge takes a user’s request, loads a hand-built catalog of running shows, and sends both to the Claude API, which picks three fits with a reason, a caution, and a typical price. The same pattern powers the secondary resale checker, which compares a pasted listing against a red-flag checklist and theater seating info. There’s no database and no live data, so the riskiest assumption is that the catalog is accurate and current enough to trust. Closed shows, stale prices, or wrong content warnings would sink user confidence, so verify every show and test with a few sample requests.</p>
+      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>.</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
         <div class="stat-box">
           <div class="stat-label">Cumulative Build Spend</div>
-          <div class="stat-value">[Record actual spend]</div>
+          <div class="stat-value">$21.78 through Build 1 (Build 2 not recorded yet)</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Est. Cost Per User Run</div>
-          <div class="stat-value">[Not yet estimated]</div>
+          <div class="stat-value">About $0.02 per request (Claude Sonnet 5.5 at $2 per million input and $10 per million output tokens; roughly 8,000 tokens in and 400 out with the 34-show catalog)</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">User Evidence (Analytics from Build 2)</div>
-          <div class="stat-value">[Not yet measured]</div>
+          <div class="stat-value">None yet. PostHog is not installed.</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Sponsor Call (Week 6)</div>
@@ -231,47 +231,56 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
       <div class="log-entry">
         <h3>Build 1 · Intent.md & Throwaway Prototype (Due Nov 9)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [PRD v1, prototype in Claude: .]</li>
-          <li><strong>Things learned with AI:</strong> [The Terminal lets you control your computer by typing commands instead of clicking. Git tracks changes to your project and saves snapshots called commits. GitHub stores your project online so you can share and collaborate with others.]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Established Terminal, downloaded Github and tried to link the two, integrated Claude Code, began building v1 of prototype]</li>
-          <li><strong>Cost & time this week:</strong> $[21.78] · [4] hours</li>
+          <li><strong>What shipped:</strong> PRD v1 and this Product Page on GitHub Pages. A local prototype: a Streamlit show recommender (<code>streamlit_app.py</code>) and a command-line version (<code>app.py</code>) with a hand-built catalog of 8 shows. Code removes shows that break the budget, kids' ages or dealbreakers, Claude picks from what is left, and code checks the answer. Also an 8-listing ticket scam checker and an offline test suite that needs no API key.</li>
+          <li><strong>Things learned with AI:</strong> The Terminal lets you control your computer by typing commands instead of clicking. Git tracks changes to your project and saves snapshots called commits. GitHub stores your project online so you can share and collaborate with others.</li>
+          <li><strong>What broke / changed in PRD:</strong> Running the live test without an API key ended in a Python traceback, so the test now prints a plain message telling you to add the key to <code>.env</code>. Every catalog entry was written from memory and marked TODO, so nobody could say yet whether a show was still running or the prices were right.</li>
+          <li><strong>Cost & time this week:</strong> $21.78 · 4 hours</li>
         </ul>
       </div>
 
       <div class="log-entry">
         <h3>Build 2 · Smallest Local Version & PostHog (Due Nov 16)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [Local working slice, PostHog verified on this page and the local app, PRD v2, and local setup in AGENTS.md]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>What shipped (as of Nov 13):</strong> The catalog grew from 8 to 34 shows running or opening now, checked against Broadway Direct's what's-on guide. A browser version of the recommender (<a href="app/">app/</a>) that applies the same hard rules and can optionally ask Claude to pick. 27 offline checks in <code>web/test_core.js</code> plus the existing Python tests, all passing. Real run and test commands in <code>AGENTS.md</code>. Merged in pull request #1.<br />
+          <strong>Still open before Nov 16:</strong> run the Streamlit app with my own API key and screenshot the picks, install PostHog, name a real first user, and write PRD v2.</li>
+          <li><strong>What broke / changed in PRD:</strong>
+            <ul>
+              <li>The riskiest assumption was real. The old catalog covered 8 of the 34 shows now listed, and some shows are closing soon (Maybe Happy Ending tickets are on sale only through Nov 22; School Girls is listed as leaving this month). Entries now carry a note field for closing dates, and ages, content notes and most prices are labeled as estimates on the page.</li>
+              <li>The text reader treated "I hate jukebox musicals, and we want to laugh" as a dislike of comedy, because the word "hate" reached across the comma. Found by running the example request in a browser; fixed by ending the dislike at a comma or "but", with a test.</li>
+              <li>A family night with no kids' ages entered could return a show meant for ages 13 and up. Now the ranker leans toward school-age shows when kids are mentioned and says so under the picks.</li>
+              <li>The test suite used Hamilton as its made-up show, which stopped working once Hamilton was a real entry in the catalog.</li>
+              <li>Cost per request went up about 2.3 times, from roughly $0.009 to $0.02, because the Python app sends every eligible show to Claude. The browser version sends only the top 10.</li>
+            </ul>
+          </li>
+          <li><strong>Cost & time this week:</strong> Not recorded yet</li>
         </ul>
       </div>
 
       <div class="log-entry">
         <h3>Build 3 · Build.exe: The Core Workflow (Due Nov 23)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [End-to-end workflow working with real inputs + PostHog funnel events]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>What shipped:</strong> Not started.</li>
+          <li><strong>What broke / changed in PRD:</strong> Not started.</li>
+          <li><strong>Cost & time this week:</strong> Not started.</li>
         </ul>
       </div>
 
       <div class="log-entry">
         <h3>Build 4 · Test.py: Choose Track A or Track B (Due Nov 30)</h3>
         <ul>
-          <li><strong>Chosen track:</strong> [A: 10-case domain eval and one outside target-user review; OR B: 3–5 outside users and replay findings]</li>
-          <li><strong>Results and improvements:</strong> [Before/after evidence; for Track B, fixes to the top three friction points]</li>
-          <li><strong>PRD v4 changes:</strong> [What the evidence changed]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>Chosen track:</strong> Not chosen yet.</li>
+          <li><strong>Results and improvements:</strong> Not started.</li>
+          <li><strong>PRD v4 changes:</strong> Not started.</li>
+          <li><strong>Cost & time this week:</strong> Not started.</li>
         </ul>
       </div>
 
       <div class="log-entry">
         <h3>Build 5 · Ship.installer: Launch Ops, Rollback Check & 2-Min Video (Due Dec 7)</h3>
         <ul>
-          <li><strong>Launch Ops & Safety:</strong> [Verified no exposed keys, set spend cap, tested 2-minute rollback]</li>
-          <li><strong>2-Minute Video & Final Polish:</strong> [Link/embed above]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>Launch Ops & Safety:</strong> Not started.</li>
+          <li><strong>2-Minute Video & Final Polish:</strong> Not started.</li>
+          <li><strong>Cost & time this week:</strong> Not started.</li>
         </ul>
       </div>
     </section>
