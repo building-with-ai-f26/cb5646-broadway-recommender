@@ -62,7 +62,7 @@ def fake_client(reply_builder):
 def sloppy_ai(prompt):
     """A badly behaved AI: invents a show, picks an over-budget show, wraps JSON in chatter."""
     picks = [
-        {"title": "Hamilton", "why_it_fits": "made up", "caution": "x", "theater": "Fake Theatre", "price_range": "$5"},
+        {"title": "Nonexistent: The Musical", "why_it_fits": "made up", "caution": "x", "theater": "Fake Theatre", "price_range": "$5"},
         {"title": "Wicked", "why_it_fits": "Big, crowd-pleasing songs.", "caution": "Popular, so dates sell out.",
          "theater": "Wrong Theatre", "price_range": "$1-$2", "rush_or_lottery": False},
     ]

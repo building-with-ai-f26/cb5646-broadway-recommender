@@ -3,14 +3,15 @@
 > Give this file to your coding agent and check that it is using these instructions. Keep the stack, commands, and ground rules current.
 
 ## 1. Project Overview
-- **What this repo builds:** [1–2 sentence summary]
+- **What this repo builds:** Broadway Concierge, a show recommender for first-time and budget-conscious theatergoers. Code applies hard limits (budget, kids' ages, dealbreakers) first; AI only ranks what is left.
 - **Primary user & core workflow:** [See the living PRD in `docs/index.html`]
-- **Tech stack:** [e.g., Python 3.12 / FastAPI / Next.js / SQLite / OpenRouter API]
+- **Tech stack:** Python 3 + Streamlit + Anthropic API (local app); plain JavaScript single-page web app in `web/` built into `docs/app/index.html`; hand-built catalog in `data/shows.json`.
 
 ## 2. Commands
-- **Install dependencies:** `[e.g., npm install / uv sync]`
-- **Run locally:** `[e.g., npm run dev]`
-- **Run deterministic tests:** `[e.g., pytest / npm test]`
+- **Install dependencies:** `pip install -r requirements.txt`
+- **Run locally:** `streamlit run streamlit_app.py` (needs `ANTHROPIC_API_KEY` in `.env`); web app: open `docs/app/index.html`
+- **Run deterministic tests:** `python test_recommender.py` and `node web/test_core.js`
+- **Rebuild the web app after editing `data/shows.json` or `web/`:** `python web/build.py`
 - **Run model evals:** `[e.g., python tests/eval.py]`
 
 ## 3. Non-Negotiable Engineering Rules

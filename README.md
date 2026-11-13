@@ -5,7 +5,7 @@
 - **Builder:** [Ciara Butler] (`@ciaralbutler`)
 - **Pod:** [Pod 13]
 - **Product Page & Living PRD:** [[(https://building-with-ai-f26.github.io/cb5646-broadway-recommender/)]
-- **App:** runs locally through Week 4; add a cloud URL in Build 5.
+- **App:** [web version](https://building-with-ai-f26.github.io/cb5646-broadway-recommender/app/) (once deployed from `docs/`); the Streamlit app runs locally with `streamlit run streamlit_app.py`. Add the final cloud URL in Build 5.
 
 ## Start here: Build 1
 
