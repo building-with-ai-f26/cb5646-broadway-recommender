@@ -1,0 +1,21 @@
+{
+  "_note": "Descriptions and the answers both inferAnswers (web/recommender.js) and infer_answers (app.py) must fill in. Checked by node web/test_core.js and python test_recommender.py.",
+  "cases": [
+    ["Date night with my partner. Something romantic that might make us cry, a musical, $150 max per ticket.", {"who": "date", "mood": "cry", "budget": 150, "showType": "musical"}],
+    ["Taking the kids, the youngest is 6. We want a musical that will wow them, and any price is fine.", {"who": "family", "mood": "be wowed", "budget": null, "showType": "musical", "age": 6}],
+    ["Night out with friends. We want to laugh, a musical or a play is fine, no jukebox musicals, under $150.", {"who": "friends", "mood": "laugh", "budget": 150, "showType": "either", "rules": ["jukebox"]}],
+    ["My first Broadway show, and I am going on my own, so nothing too long. Surprise me with a play, around $120.", {"who": "solo", "mood": "surprise", "budget": 120, "showType": "play", "first": "yes", "rules": ["long runtime"]}],
+    ["Going with my boyfriend, want something funny under 100 dollars, prefer a musical", {"who": "date", "mood": "laugh", "budget": 100, "showType": "musical"}],
+    ["me and my sister want to see a funny show, budget 200", {"who": "family", "mood": "laugh", "budget": 200}],
+    ["girls night out! we want to laugh and sing along, cheap tickets", {"who": "friends", "mood": "laugh", "budget": 75}],
+    ["Want something sad and romantic for date night, play, max 150", {"who": "date", "mood": "cry", "budget": 150, "showType": "play"}],
+    ["I want a comedy for me and my roommate under 120", {"who": "friends", "mood": "laugh", "budget": 120}],
+    ["Family trip with 2 kids (8 and 12), musical, under $250", {"who": "family", "budget": 250, "showType": "musical", "age": 8}],
+    ["my 8-year-old and 11 year old love musicals", {"who": "family", "showType": "musical", "age": 8}],
+    ["I hate musicals, give me a play", {"showType": "play"}],
+    ["Not a musical please, something with spectacular staging, $80-120", {"showType": "play", "mood": "be wowed", "budget": 120}],
+    ["Taking my mom for her birthday. She loved Wicked, we want to laugh, and $150 a ticket is our max.", {"who": "family", "mood": "laugh", "budget": 150}],
+    ["Treating myself, money is no object, want a big epic musical", {"who": "solo", "budget": null, "showType": "musical", "mood": "be wowed"}],
+    ["something nice", {}]
+  ]
+}

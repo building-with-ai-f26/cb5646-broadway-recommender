@@ -188,6 +188,11 @@ const sloppyAi = async () =>
     assert.strictEqual(R.inferAnswers("Not a musical please").showType, "play");
     assert.deepStrictEqual(R.inferAnswers("something nice"), {});
   });
+  check("inferAnswers: every description in tests/infer_cases.json (shared with app.py)", () => {
+    const sorted = (o) => JSON.stringify(Object.fromEntries(Object.entries(o).sort()));
+    const cases = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "tests", "infer_cases.json"), "utf8")).cases;
+    for (const [text, want] of cases) assert.strictEqual(sorted(R.inferAnswers(text)), sorted(want), text);
+  });
   check("catalog sanity: 34 shows, unique titles, price_low <= price_high", () => {
     assert.strictEqual(SHOWS.length, 34);
     assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 34);
