@@ -263,6 +263,7 @@ button.line:hover { background: var(--accent-soft); }
       <fieldset>
         <legend>Been to Broadway before? <span class="req opt">Optional</span></legend>
         <div class="pills" id="first"></div>
+        <p class="hint">Pick both if your group is a mix. Shows that are easy for newcomers rank higher when anyone is new.</p>
       </fieldset>
 
       <fieldset>
@@ -850,7 +851,8 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   const MOOD = [["surprise", "Surprise me", "different"], ["laugh", "Laugh", "laugh"], ["cry", "Cry", "cry"], ["be wowed", "Be wowed", "wow"], ["sing along", "Sing along", "sing"]];
   const TYPE = [["musical", "Musical", "sing"], ["play", "Play", "masks"], ["either", "Either", "either"]];
   const RULES = [["jukebox", "No jukebox musicals"], ["adult content", "No crude or sexual content"], ["adult themes", "No adult themes"], ["long runtime", "Under 2h15"], ["loud effects", "Not too loud"], ["no intermission", "No intermission"]];
-  const FIRST = [["", "Either"], ["yes", "First time"], ["no", "Been before"]];
+  // Checkboxes, so a mixed group can pick both. state.first is "", "yes", "no" or "both".
+  const FIRST = [["yes", "First time"], ["no", "Been before"]];
   const ICONS = {
     unsure: '<circle cx="12" cy="12" r="8.5"/><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.400-1 .900-1 1.700M12 17h.01"/>',
     solo: '<circle cx="12" cy="8" r="3.4"/><path d="M5.500 20c.8-4 3.400-6 6.500-6s5.700 2 6.500 6"/>',
@@ -903,7 +905,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   optionGroup("mood", "mood", MOOD, "radio", true, true);
   optionGroup("type", "type", TYPE, "radio", true, true);
   optionGroup("budget", "budget", BUDGETS, "radio", false, true);
-  optionGroup("first", "first", FIRST, "radio", false);
+  optionGroup("first", "first", FIRST, "checkbox", false);
   optionGroup("rules", "rules", RULES, "checkbox", false);
   PRESETS.forEach(([label, text]) => {
     const b = el("button", "", label); b.type = "button";
@@ -943,7 +945,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     setRadio("mood", state.mood);
     setRadio("type", state.type);
     setRadio("budget", state.budget === undefined ? "" : state.budget === null ? "any" : String(state.budget));
-    setRadio("first", state.first);
+    document.querySelectorAll('input[name="first"]').forEach((i) => { i.checked = state.first === "both" || state.first === i.value; });
     document.querySelectorAll('input[name="rules"]').forEach((i) => { i.checked = state.rules.includes(i.value); });
     if ($("text").value !== state.text) $("text").value = state.text;
     $("ageWrap").hidden = state.who !== "family";
@@ -968,7 +970,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     return {
       text: state.text.trim(), who: state.who === "unsure" ? null : state.who, kidsAges: state.age === null ? "" : String(state.age),
       mood: state.mood === "surprise" ? null : state.mood, showType: state.type === "either" ? null : state.type, maxPrice: state.budget === undefined ? null : state.budget, dealbreakers: state.rules,
-      firstShow: { yes: true, no: false }[state.first] ?? null,
+      firstShow: { yes: true, both: true, no: false }[state.first] ?? null, // anyone new -> favor first-timer-friendly shows
     };
   }
 
@@ -1310,6 +1312,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     const t = e.target; if (!t || !t.name) return;
     touch();
     if (t.name === "rules") track("question_answered", { question: "rules", value: [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value) });
+    else if (t.name === "first") track("question_answered", { question: "first", value: [...document.querySelectorAll('input[name="first"]:checked')].map((i) => i.value) });
     else track("question_answered", { question: t.name, value: t.name === "budget" && t.value !== "any" ? Number(t.value) : t.value });
     if (t.name === "rules") state.autoRules = [];
     else state.auto.delete(t.name);
@@ -1317,7 +1320,10 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     else if (t.name === "mood") state.mood = t.value;
     else if (t.name === "type") state.type = t.value;
     else if (t.name === "budget") { state.budget = t.value === "any" ? null : Number(t.value); if (state.budget !== null) $("budgetRange").value = state.budget; $("budgetOut").textContent = budgetText(); }
-    else if (t.name === "first") state.first = t.value;
+    else if (t.name === "first") {
+      const on = [...document.querySelectorAll('input[name="first"]:checked')].map((i) => i.value);
+      state.first = on.length === 2 ? "both" : on[0] || "";
+    }
     else if (t.name === "rules") state.rules = [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value);
     update();
   });
