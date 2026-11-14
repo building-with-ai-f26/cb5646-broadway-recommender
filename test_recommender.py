@@ -4,6 +4,7 @@
   python test_recommender.py --live   # runs 5 real requests through Claude (needs ANTHROPIC_API_KEY)
 """
 import json, sys
+from pathlib import Path
 from types import SimpleNamespace
 
 from app import load_shows, recommend_shows, violations, parse_ages
@@ -90,6 +91,15 @@ def run_offline():
     broken_ai = recommend_shows("anything", client=fake_client(lambda _: "not json at all"))
     assert len(broken_ai["picks"]) == 3 and all(p["fits_all_limits"] for p in broken_ai["picks"])
     print("PASS AI returns garbage -> filled from catalog")
+
+    # Pre-filling the form from a description: same cases as web/test_core.js.
+    from app import infer_answers
+    cases = json.load(open(Path(__file__).parent / "tests" / "infer_cases.json"))["cases"]
+    missed = [(t, infer_answers(t), want) for t, want in cases if infer_answers(t) != want]
+    for t, got, want in missed:
+        print(f"FAIL infer_answers({t!r}) -> {got}, wanted {want}")
+    print(("PASS " if not missed else "FAIL ") + f"infer_answers: {len(cases) - len(missed)}/{len(cases)} descriptions filled correctly")
+    failures += bool(missed)
 
     print("\nAll offline checks passed." if not failures else f"\n{failures} case(s) failed.")
     return failures

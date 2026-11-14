@@ -133,6 +133,120 @@ def catalog_fields(show):
     }
 
 
+# ---------------------------------------------------------------- pre-filling the form from free text
+# Same patterns as inferAnswers in web/recommender.js; tests/infer_cases.json keeps the two in step.
+
+_NEGATIVE_CUE = re.compile(r"\b(hate|hates|dislike|dislikes|avoid|not into|don'?t (?:like|want|love)|can'?t stand|sick of|tired of|no more|nothing|without|not a fan of)\b[\s\S]{0,40}$")
+
+
+def _negative_before(lower, idx):
+    """Is there a "hate / avoid / not into" cue just before this position, in the same clause?"""
+    window = lower[max(0, idx - 60):idx]
+    breaks = list(re.finditer(r"[.,!?;]| but | and we | and i | so ", window))
+    if breaks:
+        window = window[breaks[-1].end():]
+    return bool(_NEGATIVE_CUE.search(window))
+
+
+INFER = {
+    "family": re.compile(r"\b(kids?|children|child|sons?|daughters?|my boys|my girls|grand(?:kids?|sons?|daughters?|children|ma|pa|mother|father|parents)|nieces?|nephews?|family|mom|mum|mother|dad|father|parents|sisters?|brothers?|siblings?|cousins?|aunt|uncle|in-laws|toddlers?|teens?|teenagers?|tweens?|\d{1,2}[- ]year[- ]olds?)\b"),
+    "date": re.compile(r"\b(date|dates|anniversary|wife|husband|partner|girlfriend|boyfriend|fianc[eé]e?|spouse|honeymoon|valentine'?s?|romantic (?:evening|night)|couple)\b"),
+    "friends": re.compile(r"\b(friends?|bff|besties?|best friend|buddies|pals|girls'? (?:night|trip|weekend)|guys'? (?:night|trip|weekend)|bachelorette|bachelor|coworkers?|co-workers?|colleagues|work (?:outing|team)|team outing|a group|our group|group of|roommates?|classmates?)\b"),
+    "solo": re.compile(r"\b(solo|alone|by myself|on my own|just me|myself|treating myself|table for one)\b"),
+    "laugh": re.compile(r"\b(laugh|laughs|laughing|funny|comedy|comedic|comedies|hilarious|silly|lighthearted|light-hearted|feel-?good|humou?r|witty|campy|fun night)\b"),
+    "cry": re.compile(r"\b(cry|crying|tears|tearjerker|tear-jerker|emotional|moving|heartfelt|sob|sad|heartbreaking|touching|bittersweet|tissues)\b"),
+    "wow": re.compile(r"\b(wow|wowed|spectacle|spectacular|dazzl\w*|jaw-?dropping|special effects|magic|magical|big production|epic|stunning|blown away|impressive|amazing (?:sets|staging|production))\b"),
+    "sing": re.compile(r"\b(sing along|sing-along|singalong|singing along|songs? we know|songs i know|catchy|dance|dancing|party|upbeat|jukebox musical)\b"),
+    "surprise": re.compile(r"\b(surprise me|something different|unusual|weird|offbeat|edgy|anything|unique|quirky|experimental)\b"),
+    "any_price": re.compile(r"\b(money is no object|price doesn'?t matter|price is no object|any price|no budget|no limit|splurge|whatever it costs|cost doesn'?t matter|don'?t care (?:about|what it costs))\b"),
+    "cheap": re.compile(r"\b(cheap|cheapest|inexpensive|on a budget|tight budget|budget-friendly|affordable|not too expensive|low budget|student budget)\b"),
+}
+
+
+def _find_money(lower):
+    rng = re.search(r"\$\s?(\d{2,4})\s*(?:-|to|–)\s*\$?\s?(\d{2,4})", lower)
+    if rng:
+        return int(rng.group(2))
+    m = (re.search(r"\$\s?(\d{2,4})|(\d{2,4})\s?(?:dollars|bucks|usd)\b", lower)
+         or re.search(r"\b(?:under|below|max(?:imum)?|budget(?: is| of)?|up to|less than|no more than|around|about|at most|cap(?:ped)? at|spend(?:ing)?|tops)\s*:?\s*(?:of\s*)?(\d{2,4})\b", lower)
+         or re.search(r"\b(\d{2,4})\s*(?:max|maximum|or less|tops|per ticket|a ticket|each|a person|per person|pp)\b", lower))
+    if not m:
+        return None
+    n = int(next(g for g in m.groups() if g))
+    return n if 20 <= n <= 2000 else None
+
+
+def infer_answers(text):
+    """Guess the form answers from a description. Returns only what the text clearly says:
+    who, mood, budget (number, or None for any price), showType, age, first, rules."""
+    lower = str(text or "").lower()
+    out = {}
+
+    def said(pattern):
+        m = pattern.search(lower)
+        return m if m and not _negative_before(lower, m.start()) else None
+
+    if said(INFER["family"]):
+        out["who"] = "family"
+    elif said(INFER["date"]):
+        out["who"] = "date"
+    elif said(INFER["friends"]):
+        out["who"] = "friends"
+    elif said(INFER["solo"]):
+        out["who"] = "solo"
+
+    moods = [(mood, said(INFER[key])) for mood, key in
+             (("laugh", "laugh"), ("cry", "cry"), ("be wowed", "wow"), ("sing along", "sing"), ("surprise", "surprise"))]
+    moods = sorted((m for m in moods if m[1]), key=lambda m: m[1].start())
+    if moods:
+        out["mood"] = moods[0][0]
+
+    money = _find_money(lower)
+    if money is not None:
+        out["budget"] = max(40, min(400, money))
+    elif INFER["any_price"].search(lower):
+        out["budget"] = None
+    elif said(INFER["cheap"]):
+        out["budget"] = 75
+
+    musical = re.search(r"\bmusicals?\b", lower)
+    play = re.search(r"\b(?:straight |non-musical )?plays?\b(?! along)", lower)
+    want_musical = bool(musical) and not _negative_before(lower, musical.start())
+    want_play = bool(play) and not _negative_before(lower, play.start())
+    no_singing = re.search(r"\b(no singing|without singing|hate singing|don'?t want singing|not a musical|no musicals?|non-musical)\b", lower)
+    if no_singing or (want_play and not want_musical):
+        out["showType"] = "play"
+    elif want_musical and not want_play:
+        out["showType"] = "either" if re.search(r"\b(musical or (?:a )?play|play or (?:a )?musical)\b", lower) else "musical"
+    elif want_musical and want_play:
+        out["showType"] = "either"
+    elif re.search(r"\b(either|any kind of show|don'?t mind)\b", lower) and (musical or play):
+        out["showType"] = "either"
+
+    if out.get("who") == "family":
+        ages = [int(m.group(1)) for m in re.finditer(r"\b(\d{1,2})[- ](?:year[- ]old|yo|yr[- ]old)s?\b", lower)]
+        for m in re.finditer(r"\b(?:youngest|kids?|children|sons?|daughters?|ages?|aged|boys|girls)\b[^.\d$]{0,14}(\d{1,2})((?:\s*(?:,|and|&)\s*\d{1,2})*)", lower):
+            ages += [int(n) for n in re.findall(r"\d{1,2}", m.group(1) + m.group(2))]
+        kids = [a for a in ages if 1 <= a <= 17]
+        if kids:
+            out["age"] = min(kids)
+
+    if re.search(r"\b(first (?:time|broadway|show|musical|play)|never been|never seen a broadway|new to broadway)\b", lower):
+        out["first"] = "yes"
+    rules = []
+    if re.search(r"\b(no|hate|not into|avoid|can'?t stand|nothing|skip)\b[^.,;!?]{0,20}\bjukebox", lower):
+        rules.append("jukebox")
+    if re.search(r"\b(nothing too long|not too long|short|under (?:two|2) hours|can'?t sit (?:still|long))\b", lower):
+        rules.append("long runtime")
+    if re.search(r"\b(nothing (?:too )?loud|not too loud|quiet|sensitive to (?:noise|sound))\b", lower):
+        rules.append("loud effects")
+    if re.search(r"\b(nothing (?:too )?dark|nothing heavy|no heavy|nothing sad|keep it light|no violence)\b", lower):
+        rules.append("adult themes")
+    if rules:
+        out["rules"] = rules
+    return out
+
+
 # ---------------------------------------------------------------- the recommender
 
 SYSTEM = (
