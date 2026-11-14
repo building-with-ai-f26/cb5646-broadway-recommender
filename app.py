@@ -285,7 +285,7 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
     if want:
         details = {
             "who_is_going": who or "not said",
-            "kids_ages": ages or "not said",
+            "kids_ages": ages or ("none: everyone is 18 or older" if who == "family" else "not said"),
             "mood": mood or "not said",
             "max_price_per_ticket": max_price or "no limit",
             "show_type": show_type if show_type in SHOW_TYPES else "either",

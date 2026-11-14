@@ -109,14 +109,15 @@ const sloppyAi = async () =>
     assert.ok(R.analyzeText("I hate scary stuff", SHOWS).dislikes.some((t) => t.name === "scary shows"));
     assert.ok(R.analyzeText("I hate dancing but love horror", SHOWS).likes.some((t) => t.name === "scary shows"));
   });
-  check("family with no kids' ages -> picks lean to school-age kids and say so", () => {
-    const r = R.recommendLocal(SHOWS, { ...base, who: "family", text: "Family night with the kids" });
-    assert.ok(r.picks.every((p) => R.minAge(BY_TITLE[p.title]) < 13), r.picks.map((p) => p.title).join());
-    assert.ok(/No kids' ages/.test(r.assumptions));
-  });
-  check("family night with adults (no kids mentioned) -> no kids-ages note", () => {
+  check("family with no age set -> treated as all adults: nothing ruled out for age, and it says so", () => {
     const r = R.recommendLocal(SHOWS, { ...base, who: "family", text: "Taking my mom for her birthday" });
-    assert.ok(!/No kids' ages/.test(r.assumptions));
+    assert.strictEqual(r.eligibleCount, SHOWS.length);
+    assert.ok(/assumed everyone in your family is 18 or older/.test(r.assumptions));
+  });
+  check("family with an age set -> hard age limit and no 18+ note", () => {
+    const r = R.recommendLocal(SHOWS, { ...base, who: "family", kidsAges: "8", text: "family night" });
+    assert.ok(r.picks.filter((p) => p.fits_all_limits).every((p) => R.minAge(BY_TITLE[p.title]) <= 8));
+    assert.ok(!/18 or older/.test(r.assumptions));
   });
   check("example request -> a comedy that is not Wicked and not a jukebox show", () => {
     const r = R.recommendLocal(SHOWS, { ...base, text: "Taking my mom for her birthday. We loved Wicked, I hate jukebox musicals, and we want to laugh.",

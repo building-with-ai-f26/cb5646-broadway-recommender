@@ -195,10 +195,9 @@
     return `about ${t}${show.intermission ? "" : ", no intermission"}`;
   }
 
-  /** A family night where the text mentions kids but no ages were entered. */
-  function kidsWithoutAges(input) {
-    return input.who === "family" && !parseAges(input.kidsAges).length &&
-      /\b(kids?|child|children|sons?|daughters?|toddlers?|teens?|boys?|girls?)\b/i.test(input.text || "");
+  /** A family night with no kids' age entered: we assume everyone is 18 or older. */
+  function familyAllAdults(input) {
+    return input.who === "family" && !parseAges(input.kidsAges).length;
   }
 
   /** Score one eligible show for this person. Returns {score, reasons}. */
@@ -222,9 +221,8 @@
         family: input.kidsAges && parseAges(input.kidsAges).length ? "Works for a family with kids" : "Good for a family outing" };
       reasons.push(who[input.who]);
     }
-    if (input.who === "family" && hasTag(show, ["family-friendly"])) score += 2;
-    // Kids are coming but no ages were given: lean away from shows meant for teens and up.
-    if (kidsWithoutAges(input) && minAge(show) >= 13) score -= 4;
+    // Kid-friendly shows only get a boost when a kid's age was given; otherwise the family is all adults.
+    if (input.who === "family" && !familyAllAdults(input) && hasTag(show, ["family-friendly"])) score += 2;
     if (input.firstShow === true) {
       if (show.first_timer) {
         score += 2;
@@ -309,8 +307,8 @@
     if (!input.mood && !ctx.moods.size && !ctx.likes.length) notes.push("No mood or taste given, so I ranked by group, first-timer fit and budget.");
     if (ctx.dislikes.length) notes.push("Treated these as dislikes from your text: " + joinList(ctx.dislikes.map((t) => t.name)) + ".");
     if (ctx.loved.length) notes.push("Assumed you have already seen " + joinList(ctx.loved.map((s) => s.title)) + ".");
-    if (kidsWithoutAges(input))
-      notes.push("No kids' ages given, so I favored shows for school-age kids. Add ages to apply a hard age limit.");
+    if (familyAllAdults(input))
+      notes.push("No kid's age given, so I assumed everyone in your family is 18 or older. Set the youngest child's age if kids are coming.");
     return notes.join(" ");
   }
 

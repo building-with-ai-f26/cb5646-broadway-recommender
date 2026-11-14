@@ -229,13 +229,13 @@ button.line:hover { background: var(--accent-soft); }
         <div class="tiles tile" id="who"></div>
       </fieldset>
       <div id="ageWrap" hidden>
-        <span class="label" id="ageLabel">Youngest child</span>
+        <span class="label" id="ageLabel">Youngest in the group</span>
         <div class="stepper" role="group" aria-labelledby="ageLabel">
           <button type="button" id="ageDown" aria-label="Younger"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
-          <output id="ageOut">Not set</output>
+          <output id="ageOut">All 18+</output>
           <button type="button" id="ageUp" aria-label="Older"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
         </div>
-        <p class="hint">Shows meant for older audiences are ruled out. Skip it if the kids are not part of the plan.</p>
+        <p class="hint">Leave it at "All 18+" if everyone going is an adult. With an age set, shows meant for older audiences are ruled out.</p>
       </div>
 
       <fieldset>
@@ -439,7 +439,7 @@ const POSTHOG = /*__POSTHOG__*/null;
   function setRadio(name, value) {
     document.querySelectorAll(`input[name="${name}"]`).forEach((i) => { i.checked = i.value === value; });
   }
-  function ageText() { return state.age === null ? "Not set" : "Age " + state.age; }
+  function ageText() { return state.age === null ? "All 18+" : "Age " + state.age; }
   function budgetText() { return state.budget === undefined ? "Not set" : state.budget === null ? "No limit" : "$" + state.budget; }
   function syncControls() {
     setRadio("who", state.who);

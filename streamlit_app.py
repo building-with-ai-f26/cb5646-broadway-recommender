@@ -86,7 +86,7 @@ with col1:
                        on_change=mark_manual, args=("who",))
     kids_ages = ""
     if who == "family":
-        kids_ages = st.text_input("Kids' ages (if any)", placeholder="e.g. 6, 10", key="kids_ages",
+        kids_ages = st.text_input("Kids' ages (if any)", placeholder="e.g. 6, 10. Leave blank if everyone is 18+", key="kids_ages",
                                   on_change=mark_manual, args=("kids_ages",))
     mood = st.selectbox("Mood", ["(any)", "laugh", "cry", "be wowed", "sing along", "something different"], key="mood",
                         on_change=mark_manual, args=("mood",))
