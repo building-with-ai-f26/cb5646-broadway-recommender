@@ -104,9 +104,6 @@ legend, .label { display: block; padding: 0; margin-bottom: 10px; font: 700 1.1r
 textarea { width: 100%; min-height: 96px; resize: vertical; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); line-height: 1.45; }
 textarea::placeholder { color: var(--muted); opacity: .85; }
 
-.claude-row { display: grid; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--tint); }
-button.solid { min-height: 48px; padding: 0 18px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; }
-button.solid:disabled { opacity: .6; cursor: progress; }
 button.line { min-height: 48px; padding: 0 16px; border: 1.5px solid var(--accent); border-radius: 10px; background: transparent; color: var(--accent); font-weight: 700; cursor: pointer; }
 button.line:hover { background: var(--accent-soft); }
 
@@ -129,16 +126,10 @@ button.line:hover { background: var(--accent-soft); }
 .cover svg, .cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .info { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .info h3 { font-size: clamp(1.5rem, 1.6vw + 1rem, 2rem); line-height: 1.12; overflow-wrap: anywhere; }
-.meta { color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .status { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 4px 12px 4px 10px; border-radius: 999px; font-weight: 700; font-size: .92rem; border: 1px solid currentColor; }
 .status.go { color: var(--go); background: var(--go-soft); } .status.standby { color: var(--standby); background: var(--standby-soft); }
-.rows { display: grid; gap: 8px; }
-.rows > div { display: grid; grid-template-columns: 7.2em minmax(0, 1fr); gap: 12px; }
-.rows dt { color: var(--muted); font-weight: 600; }
-.rows dd { min-width: 0; }
-.rows dd, .fine, .meta, .notice, .hint, .foot { text-wrap: pretty; }
-.price { font-variant-numeric: tabular-nums; font-weight: 600; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fine, .notice, .hint, .foot, .why p, .heads p { text-wrap: pretty; }
 .chip { padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--tint); font-size: .88rem; font-weight: 500; }
 .chip.rush { color: var(--go); border-color: var(--go); background: var(--go-soft); font-weight: 600; }
 .chip.soon { color: var(--standby); border-color: var(--standby); background: var(--standby-soft); font-weight: 600; }
@@ -149,6 +140,37 @@ button.line:hover { background: var(--accent-soft); }
 .copybox textarea { min-height: 120px; font-size: .92rem; }
 .foot { color: var(--muted); font-size: .88rem; max-width: 62ch; }
 
+/* card details */
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; padding: 14px 0; border-block: 1px solid var(--line); }
+.fact dt { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .84rem; font-weight: 600; }
+.fact dt svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fact dd { margin: 3px 0 0; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.fact.price dd { font: 700 1.6rem/1.05 var(--font-display); color: var(--accent); font-variant-numeric: lining-nums tabular-nums; }
+.why h4, .heads h4 { margin: 0; font: 700 1.05rem/1.3 var(--font-display); }
+.why p { margin: 2px 0 0; }
+.heads { display: flex; gap: 10px; padding: 10px 12px; background: var(--standby-soft); }
+.heads svg { width: 20px; height: 20px; flex: none; margin-top: 2px; fill: none; stroke: var(--standby); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.heads p { margin: 2px 0 0; }
+.chip.genre { background: transparent; }
+
+/* required badges, slider, empty state */
+.req { display: inline-block; margin-left: 8px; padding: 1px 8px; border: 1px solid var(--accent); border-radius: 6px; color: var(--accent); font: 600 .74rem/1.5 var(--font-body); vertical-align: .12em; }
+.req.opt { border-color: var(--line); color: var(--muted); }
+.req.done { border-color: var(--go); color: var(--go); }
+.slider { margin-top: 14px; }
+.slider label { display: block; font-weight: 600; font-size: .95rem; }
+.slider-row { display: flex; align-items: center; gap: 14px; min-height: 44px; }
+.slider-row input { flex: 1; min-width: 0; height: 44px; accent-color: var(--accent); cursor: pointer; }
+.slider-row output { min-width: 5.2em; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.qs textarea { min-height: 88px; }
+@media (min-width: 901px) { .results { align-self: stretch; } .empty { position: sticky; top: 16px; } }
+.empty { display: grid; gap: 14px; padding: 22px; background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; }
+.empty p { font-size: 1.05rem; }
+.todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.todo li { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.todo li span.state { margin-left: auto; font-weight: 500; color: var(--muted); font-size: .9rem; }
+.todo li.done span.state { color: var(--go); font-weight: 600; }
+
 /* One authored moment: each cover's scene rises into place, card by card, when picks appear. */
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .cover .scene { animation: rise .7s var(--ease) backwards; animation-delay: calc(var(--card, 0) * 160ms); }
@@ -157,11 +179,11 @@ button.line:hover { background: var(--accent-soft); }
 @media (max-width: 600px) {
   .show { grid-template-columns: 104px minmax(0, 1fr); gap: 10px 14px; padding: 12px; align-items: start; }
   .info { display: contents; }
-  .cover { grid-column: 1; grid-row: 1 / span 3; }
-  .info > h3, .info > .meta, .info > .status { grid-column: 2; }
-  .info > .rows, .info > .chips, .info > .fine { grid-column: 1 / -1; }
-  .rows > div { grid-template-columns: 1fr; gap: 0; }
-  .info h3 { font-size: 1.35rem; }
+  .cover { grid-column: 1; grid-row: 1 / span 2; }
+  .info > h3, .info > .tags { grid-column: 2; }
+  .info > .facts, .info > .fine, .info > .why, .info > .heads { grid-column: 1 / -1; }
+  .facts { grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+    .info h3 { font-size: 1.35rem; }
 }
 .jump { position: fixed; left: 16px; right: 16px; bottom: 14px; z-index: 5; display: none; align-items: center; justify-content: center; gap: 8px;
   min-height: 52px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; box-shadow: 0 6px 18px rgba(5, 10, 25, .35); }
@@ -178,7 +200,7 @@ button.line:hover { background: var(--accent-soft); }
   <header class="marquee">
     <span class="bulbs-alt" aria-hidden="true"></span>
     <h1>Broadway <em>Concierge</em></h1>
-    <p>Three shows for your night. Tap what fits and the picks update as you go.</p>
+    <p>Answer three quick questions. Get three shows that fit your night.</p>
   </header>
 
   <main class="app">
@@ -188,10 +210,15 @@ button.line:hover { background: var(--accent-soft); }
         <button type="button" class="linkbtn" id="reset">Start over</button>
       </div>
 
-      <div class="quick" id="quick"><p>Quick starts</p></div>
+      <div class="qs">
+        <label class="label" for="text">Quick start: describe your night</label>
+        <textarea id="text" placeholder="Taking my mom for her birthday. We loved Wicked and want to laugh."></textarea>
+        <p class="hint">Optional. Say what you loved or can't stand. The picks update after you stop typing.</p>
+      </div>
+      <div class="quick" id="quick"><p>Or start from an example</p></div>
 
       <fieldset>
-        <legend>Who is going?</legend>
+        <legend>Who is going? <span class="req" data-req="who">Required</span></legend>
         <div class="tiles tile" id="who"></div>
       </fieldset>
       <div id="ageWrap" hidden>
@@ -205,36 +232,32 @@ button.line:hover { background: var(--accent-soft); }
       </div>
 
       <fieldset>
-        <legend>What are you in the mood for?</legend>
+        <legend>What are you in the mood for? <span class="req" data-req="mood">Required</span></legend>
         <div class="tiles tile" id="mood"></div>
       </fieldset>
 
       <fieldset>
-        <legend>Most you will pay per ticket</legend>
+        <legend>Most you will pay per ticket <span class="req" data-req="budget">Required</span></legend>
         <div class="pills" id="budget"></div>
+        <div class="slider">
+          <label for="budgetRange">Or set an exact maximum</label>
+          <div class="slider-row">
+            <input type="range" id="budgetRange" min="40" max="400" step="5" value="150" aria-describedby="budgetOut">
+            <output id="budgetOut" for="budgetRange">Not set</output>
+          </div>
+        </div>
       </fieldset>
 
       <fieldset>
-        <legend>Been to Broadway before?</legend>
+        <legend>Been to Broadway before? <span class="req opt">Optional</span></legend>
         <div class="pills" id="first"></div>
       </fieldset>
 
       <fieldset>
-        <legend>Rule out</legend>
+        <legend>Rule out <span class="req opt">Optional</span></legend>
         <div class="pills" id="rules"></div>
         <p class="hint">"Under 2h45" drops the longest shows. "No intermission" keeps only shows that run straight through.</p>
       </fieldset>
-
-      <div>
-        <label class="label" for="text">Anything else?</label>
-        <textarea id="text" placeholder="We loved Wicked. Nothing too loud. We want to cry a little."></textarea>
-        <p class="hint">Say what you loved or can't stand. The picks update after you stop typing.</p>
-      </div>
-
-      <div class="claude-row" id="claudeRow" hidden>
-        <button type="button" class="solid" id="askClaude">Ask Claude to pick</button>
-        <p class="hint" style="margin:0">Claude chooses only among shows that already fit your limits. It runs on your Claude account and asks permission the first time.</p>
-      </div>
     </form>
 
     <section class="results" id="results" aria-labelledby="resultsTitle">
@@ -242,6 +265,10 @@ button.line:hover { background: var(--accent-soft); }
         <h2 id="resultsTitle">Your picks</h2>
         <p class="scope" id="scope"></p>
         <p class="ruled" id="ruled" hidden></p>
+      </div>
+      <div class="empty" id="empty">
+        <p>Answer three quick questions and your picks will appear here.</p>
+        <ul class="todo" id="todo"></ul>
       </div>
       <p class="sr-only" id="status" role="status"></p>
       <div id="notices"></div>
@@ -710,8 +737,8 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
 
   // ---------------------------------------------------------------- state
   const BUDGETS = [[75, "Under $75"], [150, "Under $150"], [250, "Under $250"], [null, "Any price"]];
-  const WHO = [["", "Not sure", "unsure"], ["solo", "Solo", "solo"], ["date", "Date night", "date"], ["friends", "Friends", "friends"], ["family", "Family", "family"]];
-  const MOOD = [["", "Surprise me", "different"], ["laugh", "Laugh", "laugh"], ["cry", "Cry", "cry"], ["be wowed", "Be wowed", "wow"], ["sing along", "Sing along", "sing"]];
+  const WHO = [["unsure", "Not sure", "unsure"], ["solo", "Solo", "solo"], ["date", "Date night", "date"], ["friends", "Friends", "friends"], ["family", "Family", "family"]];
+  const MOOD = [["surprise", "Surprise me", "different"], ["laugh", "Laugh", "laugh"], ["cry", "Cry", "cry"], ["be wowed", "Be wowed", "wow"], ["sing along", "Sing along", "sing"]];
   const RULES = [["jukebox", "No jukebox musicals"], ["adult content", "Nothing adult"], ["long runtime", "Under 2h45"], ["loud effects", "Not too loud"], ["no intermission", "No intermission"]];
   const FIRST = [["", "Either"], ["yes", "First time"], ["no", "Been before"]];
   const ICONS = {
@@ -728,24 +755,29 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
 
-  const DEFAULT = { who: "date", mood: "cry", budget: 150, age: null, first: "", rules: [], text: "" };
+  // who, mood and budget start unset (undefined) because they are required; budget null means "any price".
+  const fresh = () => ({ who: undefined, mood: undefined, budget: undefined, age: null, first: "", rules: [], text: "" });
   const PRESETS = [
     ["Date night, $150 max", { who: "date", mood: "cry", budget: 150, age: null, first: "", rules: [], text: "" }],
     ["Family, youngest is 6", { who: "family", mood: "be wowed", budget: null, age: 6, first: "", rules: [], text: "" }],
     ["Big laughs, no jukebox", { who: "friends", mood: "laugh", budget: 150, age: null, first: "", rules: ["jukebox"], text: "" }],
-    ["First time, nothing too long", { who: "", mood: "", budget: 150, age: null, first: "yes", rules: ["long runtime"], text: "" }],
+    ["First time, nothing too long", { who: "unsure", mood: "surprise", budget: 150, age: null, first: "yes", rules: ["long runtime"], text: "" }],
   ];
-  let state = { ...DEFAULT, rules: [] };
+  const REQUIRED = [["who", "Who is going"], ["mood", "Mood"], ["budget", "Price per ticket"]];
+  let state = fresh();
   let offset = 0;
   let lastResult = null;
+  let hasPicks = false, offscreen = false;
+  const refreshJump = () => $("jump").classList.toggle("on", hasPicks && offscreen);
+  const complete = () => REQUIRED.every(([k]) => state[k] !== undefined);
 
   // ---------------------------------------------------------------- build the controls
-  function optionGroup(id, name, items, type, tile) {
+  function optionGroup(id, name, items, type, tile, req) {
     const box = $(id);
     items.forEach(([value, label, ic]) => {
       const wrap = el("label", "opt");
       const input = document.createElement("input");
-      input.type = type; input.name = name; input.value = value === null ? "any" : String(value);
+      input.type = type; input.name = name; input.value = value === null ? "any" : String(value); if (req) input.required = true;
       const face = el("span", "face");
       if (tile && ic) face.innerHTML = icon(ic);
       face.append(document.createTextNode(label));
@@ -753,9 +785,9 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
       box.append(wrap);
     });
   }
-  optionGroup("who", "who", WHO, "radio", true);
-  optionGroup("mood", "mood", MOOD, "radio", true);
-  optionGroup("budget", "budget", BUDGETS, "radio", false);
+  optionGroup("who", "who", WHO, "radio", true, true);
+  optionGroup("mood", "mood", MOOD, "radio", true, true);
+  optionGroup("budget", "budget", BUDGETS, "radio", false, true);
   optionGroup("first", "first", FIRST, "radio", false);
   optionGroup("rules", "rules", RULES, "checkbox", false);
   PRESETS.forEach(([label, set]) => {
@@ -768,27 +800,40 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
     document.querySelectorAll(`input[name="${name}"]`).forEach((i) => { i.checked = i.value === value; });
   }
   function ageText() { return state.age === null ? "Not set" : "Age " + state.age; }
+  function budgetText() { return state.budget === undefined ? "Not set" : state.budget === null ? "No limit" : "$" + state.budget; }
   function syncControls() {
     setRadio("who", state.who);
     setRadio("mood", state.mood);
-    setRadio("budget", state.budget === null ? "any" : String(state.budget));
+    setRadio("budget", state.budget === undefined ? "" : state.budget === null ? "any" : String(state.budget));
     setRadio("first", state.first);
     document.querySelectorAll('input[name="rules"]').forEach((i) => { i.checked = state.rules.includes(i.value); });
     $("text").value = state.text;
     $("ageWrap").hidden = state.who !== "family";
     $("ageOut").textContent = ageText();
+    if (typeof state.budget === "number") $("budgetRange").value = state.budget;
+    $("budgetOut").textContent = budgetText();
+  }
+  function refreshProgress() {
+    REQUIRED.forEach(([k]) => {
+      const badge = document.querySelector(`[data-req="${k}"]`), ok = state[k] !== undefined;
+      badge.textContent = ok ? "Done" : "Required"; badge.classList.toggle("done", ok);
+    });
+    $("todo").replaceChildren(...REQUIRED.map(([k, label]) => {
+      const ok = state[k] !== undefined, li = el("li", ok ? "done" : "");
+      li.append(el("span", "lamp " + (ok ? "go" : "standby")), document.createTextNode(label), el("span", "state", ok ? "Chosen" : "Needed"));
+      return li;
+    }));
   }
 
   function toInput() {
     return {
-      text: state.text.trim(), who: state.who || null, kidsAges: state.age === null ? "" : String(state.age),
-      mood: state.mood || null, maxPrice: state.budget, dealbreakers: state.rules,
+      text: state.text.trim(), who: state.who === "unsure" ? null : state.who, kidsAges: state.age === null ? "" : String(state.age),
+      mood: state.mood === "surprise" ? null : state.mood, maxPrice: state.budget === undefined ? null : state.budget, dealbreakers: state.rules,
       firstShow: { yes: true, no: false }[state.first] ?? null,
     };
   }
 
-  // ---------------------------------------------------------------- cover art: a blocking diagram per show
-  function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+    function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function rng(seed) { return function () { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   // ---------------------------------------------------------------- cover art: an original little scene per show
   // These are generic illustrations (a skyline, a lantern, a teacup), not the shows' official artwork or characters.
@@ -1012,6 +1057,16 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
   function fmtDate(iso) { return new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
   function money(p) { return p.price_range.replace(/\$(\d+)-\$(\d+)/, "$$$1 to $$$2"); }
 
+  function fmtRuntime(m) { const h = Math.floor(m / 60), r = m % 60; return h ? `${h}h${r ? " " + r + "m" : ""}` : `${r}m`; }
+  const FI = {
+    pin: '<path d="M12 21s-6.500-5.700-6.500-10.500a6.500 6.500 0 0 1 13 0C18.500 15.300 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/>',
+    clock: '<circle cx="12" cy="12" r="8.500"/><path d="M12 7v5l3 2"/>',
+    people: '<circle cx="9" cy="8.500" r="3"/><path d="M3 20c.5-3.600 2.800-5.500 6-5.500s5.500 1.900 6 5.500M16 6a3 3 0 0 1 0 5.800M18 14.800c1.700.8 2.700 2.400 3 5.200"/>',
+    ticket: '<path d="M3 9a2.500 2.500 0 0 0 0 6v3h18v-3a2.500 2.500 0 0 1 0-6V6H3z"/><path d="M14 6v12" stroke-dasharray="2 2.500"/>',
+    alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4.500M12 17.500h.01"/>',
+  };
+  const fiSvg = (n) => `<svg viewBox="0 0 24 24" aria-hidden="true">${FI[n]}</svg>`;
+
   function card(p, idx) {
     const show = BY_TITLE[p.title] || {};
     const art = el("article", "show");
@@ -1019,21 +1074,27 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
     art.append(coverNode(show, p.rank || idx + 1, idx));
     const info = el("div", "info");
     info.append(el("h3", "", p.title));
-    info.append(el("p", "meta", [p.theater, p.genre === "play" ? "Play" : "Musical", R.runtimeText(p), p.age].join(" · ")));
+
+    const tags = el("div", "tags");
     const st = el("span", "status " + (p.fits_all_limits ? "go" : "standby"));
     st.append(el("span", "lamp " + (p.fits_all_limits ? "go" : "standby")), document.createTextNode(p.fits_all_limits ? "Go: fits all your limits" : "Standby: near miss"));
-    info.append(st);
-    const rows = el("dl", "rows");
-    const row = (k, v, cls) => { const d = el("div"); d.append(el("dt", "", k), el("dd", cls || "", v)); rows.append(d); };
-    row("Why it fits", p.why_it_fits);
-    row("Heads up", p.caution);
-    row("Price", money(p), "price");
-    info.append(rows);
-    const chips = el("div", "chips");
-    if (p.rush_or_lottery) chips.append(el("span", "chip rush", "Rush or lottery often available"));
-    if (p.status === "previews" && p.opens) chips.append(el("span", "chip soon", "In previews, opens " + fmtDate(p.opens)));
-    if (chips.children.length) info.append(chips);
+    tags.append(st, el("span", "chip genre", p.genre === "play" ? "Play" : "Musical"));
+    if (p.rush_or_lottery) tags.append(el("span", "chip rush", "Rush or lottery often available"));
+    if (p.status === "previews" && p.opens) tags.append(el("span", "chip soon", "In previews, opens " + fmtDate(p.opens)));
+    info.append(tags);
+
+    const facts = el("dl", "facts");
+    const fact = (ic, k, v, cls) => { const d = el("div", "fact" + (cls ? " " + cls : "")); const dt = el("dt"); dt.innerHTML = fiSvg(ic); dt.append(document.createTextNode(k)); d.append(dt, el("dd", "", v)); facts.append(d); };
+    fact("pin", "Theater", p.theater);
+    fact("ticket", "Typical price", money(p).replace(/ \(typical, not live\)$/, ""), "price");
+    fact("clock", "Runtime", fmtRuntime(p.runtime_min) + (p.intermission ? ", with intermission" : ", no intermission"));
+    fact("people", "Best for", String(p.age).replace(/^Best /, "Ages "));
+    info.append(facts);
     if (show.price_basis) info.append(el("p", "fine", show.price_basis));
+
+    const why = el("section", "why"); why.append(el("h4", "", "Why it fits"), el("p", "", p.why_it_fits)); info.append(why);
+    const heads = el("div", "heads"); heads.innerHTML = fiSvg("alert");
+    const hb = el("div"); hb.append(el("h4", "", "Heads up"), el("p", "", p.caution)); heads.append(hb); info.append(heads);
     art.append(info);
     return art;
   }
@@ -1059,25 +1120,34 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
     fitCovers();
     const out = ruledOut(input);
     const fit = SHOWS.length - out.total;
-    const src = result.source === "claude" ? "Claude picked from the shows that fit." : "Ranked by the built-in matcher.";
-    $("scope").replaceChildren(el("b", "", String(fit)), document.createTextNode(` of ${SHOWS.length} shows fit your limits. ${src}`));
+    $("empty").hidden = true; $("scope").hidden = false;
+    $("scope").replaceChildren(el("b", "", String(fit)), document.createTextNode(` of ${SHOWS.length} shows fit your limits. Ranked by your mood, group and taste.`));
     const ruled = $("ruled");
     if (out.total) {
       ruled.hidden = false; ruled.replaceChildren(el("span", "lamp stop"), document.createTextNode(out.parts.length === 1 ? `Ruled out ${out.total}: ${out.parts[0].replace(/^\d+ /, "")}` : `Ruled out ${out.total}: ${out.parts.join(", ")}`));
     } else ruled.hidden = true;
     if (result.message) $("notices").append(el("div", "notice warn", result.message));
-    if (result.aiError) $("notices").append(el("div", "notice", "Claude could not answer this time, so these picks come from the built-in matcher."));
     if (result.assumptions) $("notices").append(el("div", "notice", "Assumptions: " + (Array.isArray(result.assumptions) ? result.assumptions.join(" ") : result.assumptions)));
-    const canMore = result.source === "built-in" && (result.eligibleCount || 0) > 3;
+    const canMore = (result.eligibleCount || 0) > 3;
     $("actions").hidden = !result.picks.length;
     $("more").hidden = !canMore;
     $("copybox").hidden = true;
     $("status").textContent = `${result.picks.length} picks: ${result.picks.map((p) => p.title).join(", ")}.`;
     $("jumpText").textContent = `See your ${result.picks.length} picks`;
+    hasPicks = true; refreshJump();
+  }
+  function renderEmpty() {
+    lastResult = null; hasPicks = false; refreshJump();
+    $("picks").replaceChildren(); $("notices").replaceChildren();
+    $("empty").hidden = false; $("scope").hidden = true; $("ruled").hidden = true;
+    $("actions").hidden = true; $("copybox").hidden = true;
+    $("status").textContent = "Choose who is going, a mood and a price to see your picks.";
   }
 
   function update(keepOffset) {
     if (!keepOffset) offset = 0;
+    refreshProgress();
+    if (!complete()) { renderEmpty(); return; }
     const input = toInput();
     render(R.recommendLocal(SHOWS, input, { offset }), input);
   }
@@ -1088,7 +1158,7 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
     const t = e.target; if (!t || !t.name) return;
     if (t.name === "who") { state.who = t.value; $("ageWrap").hidden = state.who !== "family"; if (state.who !== "family") { state.age = null; $("ageOut").textContent = ageText(); } }
     else if (t.name === "mood") state.mood = t.value;
-    else if (t.name === "budget") state.budget = t.value === "any" ? null : Number(t.value);
+    else if (t.name === "budget") { state.budget = t.value === "any" ? null : Number(t.value); if (state.budget !== null) $("budgetRange").value = state.budget; $("budgetOut").textContent = budgetText(); }
     else if (t.name === "first") state.first = t.value;
     else if (t.name === "rules") state.rules = [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value);
     update();
@@ -1096,7 +1166,11 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
   $("text").addEventListener("input", () => { state.text = $("text").value; clearTimeout(typing); typing = setTimeout(update, 450); });
   $("ageUp").addEventListener("click", () => { state.age = state.age === null ? 6 : Math.min(17, state.age + 1); $("ageOut").textContent = ageText(); update(); });
   $("ageDown").addEventListener("click", () => { state.age = state.age === null || state.age <= 1 ? null : state.age - 1; $("ageOut").textContent = ageText(); update(); });
-  $("reset").addEventListener("click", () => { state = { ...DEFAULT, rules: [] }; syncControls(); update(); });
+  $("reset").addEventListener("click", () => { state = fresh(); syncControls(); update(); });
+  $("budgetRange").addEventListener("input", () => {
+    state.budget = Number($("budgetRange").value); $("budgetOut").textContent = budgetText();
+    setRadio("budget", String(state.budget)); update();
+  });
   $("more").addEventListener("click", () => { offset = (offset + 3) % (lastResult.eligibleCount || 3); update(true); $("picksTop").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); });
 
   $("copy").addEventListener("click", async () => {
@@ -1106,26 +1180,9 @@ const SHOWS = [{"title":"Wicked","theater":"Gershwin Theatre","genre":"musical",
     catch (e) { $("copybox").hidden = false; const t = $("copytext"); t.value = text; t.focus(); t.select(); }
   });
 
-  // optional Claude step (only exists inside the Claude artifact viewer)
-  let sample = null;
-  try {
-    if (window.claude && typeof window.claude.use === "function") {
-      Promise.resolve(window.claude.use("sample")).then((s) => { if (typeof s === "function") { sample = s; $("claudeRow").hidden = false; } }).catch(() => {});
-    }
-  } catch (e) { /* no Claude here, built-in matcher only */ }
-  $("askClaude").addEventListener("click", async () => {
-    const btn = $("askClaude"), input = toInput(), label = btn.textContent;
-    btn.disabled = true; btn.textContent = "Asking Claude...";
-    try {
-      const result = await R.recommendWithAI(SHOWS, input, async (system, user) => (await sample(system + "\n\n" + user, { modelTier: "default", cache: false })).text);
-      render(result, input);
-    } catch (e) { render({ ...R.recommendLocal(SHOWS, input, { offset }), aiError: "x" }, input); }
-    finally { btn.disabled = false; btn.textContent = label; }
-  });
-
   // phone: a bar that jumps down to the picks while they are off screen
   if ("IntersectionObserver" in window) {
-    const io = new IntersectionObserver((entries) => { $("jump").classList.toggle("on", !entries[0].isIntersecting); }, { threshold: 0.05 });
+    const io = new IntersectionObserver((entries) => { offscreen = !entries[0].isIntersecting; refreshJump(); }, { threshold: 0.05 });
     io.observe($("picks"));
   }
   $("jump").addEventListener("click", () => $("picksTop").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }));
