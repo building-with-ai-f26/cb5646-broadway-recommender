@@ -6,33 +6,33 @@
 <title>Broadway Concierge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* World: the stage manager's backstage paperwork. Condensed signage type, work-light blue, cue-light green/amber/red
-   for status, and a spike-tape blocking diagram on every cover. Layout: a brief on the left, picks on the right. */
+/* Look: a playbill. Crimson and marquee gold on plum-tinted paper, Bodoni headlines, chasing marquee bulbs.
+   Layout: a brief on the left (tap tiles), picks with program covers on the right. */
 :root {
-  --ground: #eceff4; --surface: #ffffff; --tint: #f5f7fb; --ink: #0e1726; --muted: #475268; --line: #c9d1de;
-  --accent: #1a4bd0; --accent-ink: #ffffff; --accent-soft: #e2e9ff;
-  --go: #0b7436; --standby: #855200; --stop: #b0251d;
-  --go-soft: #dff3e6; --standby-soft: #fbefd4; --stop-soft: #fbe3e0;
-  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
-  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ground: #f3eff7; --surface: #ffffff; --tint: #ece6f3; --ink: #1c1426; --muted: #665b73; --line: #d8cfe3;
+  --accent: #a3112c; --accent-ink: #ffffff; --accent-soft: #f6e1e6; --bulb: #e0a01a;
+  --go: #1b6b44; --standby: #8a4b00; --stop: #a3112c;
+  --go-soft: #e1f2e9; --standby-soft: #fbefd9; --stop-soft: #fbe3e7;
+  --font-display: "Bodoni Moda", Didot, "Bodoni 72", Georgia, serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
   --ease: cubic-bezier(.16, 1, .3, 1);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ground: #090f1b; --surface: #111a2b; --tint: #0d1525; --ink: #e8eefa; --muted: #a2b2cb; --line: #26344d;
-    --accent: #7ea4ff; --accent-ink: #07122c; --accent-soft: #19284d;
-    --go: #55e393; --standby: #ffc552; --stop: #ff8178;
-    --go-soft: #12301f; --standby-soft: #33260b; --stop-soft: #3a1714; color-scheme: dark;
+    --ground: #140e1a; --surface: #1f1628; --tint: #2a1f36; --ink: #f4eef9; --muted: #aa9db8; --line: #3b2d49;
+    --accent: #ff5470; --accent-ink: #1c0a10; --accent-soft: #3a1a2a; --bulb: #ffc04d;
+    --go: #5fd39a; --standby: #ffb35c; --stop: #ff7a8e;
+    --go-soft: #123024; --standby-soft: #36240d; --stop-soft: #3a141d; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --ground: #090f1b; --surface: #111a2b; --tint: #0d1525; --ink: #e8eefa; --muted: #a2b2cb; --line: #26344d;
-  --accent: #7ea4ff; --accent-ink: #07122c; --accent-soft: #19284d;
-  --go: #55e393; --standby: #ffc552; --stop: #ff8178;
-  --go-soft: #12301f; --standby-soft: #33260b; --stop-soft: #3a1714; color-scheme: dark;
+  --ground: #140e1a; --surface: #1f1628; --tint: #2a1f36; --ink: #f4eef9; --muted: #aa9db8; --line: #3b2d49;
+  --accent: #ff5470; --accent-ink: #1c0a10; --accent-soft: #3a1a2a; --bulb: #ffc04d;
+  --go: #5fd39a; --standby: #ffb35c; --stop: #ff7a8e;
+  --go-soft: #123024; --standby-soft: #36240d; --stop-soft: #3a141d; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -41,7 +41,7 @@ html, body { margin: 0; }
 body { background: var(--ground); color: var(--ink); font: 400 17px/1.5 var(--font-body); -webkit-text-size-adjust: 100%; }
 ::selection { background: var(--accent); color: var(--accent-ink); }
 h1, h2, h3, p, dl, dd { margin: 0; }
-h1, h2, h3 { text-wrap: balance; font-family: var(--font-display); font-weight: 700; letter-spacing: .005em; }
+h1, h2, h3 { text-wrap: balance; font-family: var(--font-display); font-weight: 700; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: var(--accent); text-underline-offset: .18em; text-decoration-thickness: 1px; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
@@ -51,17 +51,25 @@ textarea { caret-color: var(--accent); }
 
 .shell { max-width: 1180px; margin: 0 auto; padding: 0 20px 88px; }
 
-/* Top bar */
-.bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; padding: 22px 0 18px; border-bottom: 1px solid var(--line); }
-.bar h1 { font-size: clamp(1.6rem, 4vw + .3rem, 2.4rem); text-transform: uppercase; letter-spacing: .03em; line-height: 1; overflow-wrap: anywhere; }
-.bar p { color: var(--muted); }
+/* Marquee header: two rows of gold bulbs; the bottom row chases. */
+.marquee { position: relative; padding: 36px 0 30px; text-align: center; }
+.marquee::before, .marquee::after { content: ""; position: absolute; left: 0; right: 0; height: 12px;
+  background: radial-gradient(circle, var(--bulb) 0 3.5px, transparent 4.5px) 0 50% / 22px 12px repeat-x; }
+.marquee::before { top: 8px; }
+.marquee::after { bottom: 0; animation: chase 1.6s steps(1) infinite; }
+.marquee .bulbs-alt { position: absolute; left: 0; right: 0; top: 8px; height: 12px;
+  background: radial-gradient(circle, var(--bulb) 0 3.5px, transparent 4.5px) 11px 50% / 22px 12px repeat-x; opacity: .45; }
+@keyframes chase { 50% { opacity: .45; } }
+.marquee h1 { font-size: clamp(2.1rem, 6.4vw, 4rem); line-height: 1; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.marquee h1 em { font-style: italic; font-weight: 500; color: var(--accent); }
+.marquee p { margin: 12px auto 0; max-width: 46ch; color: var(--muted); font-size: 1.05rem; text-wrap: pretty; }
 
-.app { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 36px; align-items: start; padding-top: 28px; }
+.app { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 36px; align-items: start; padding-top: 30px; }
 @media (max-width: 900px) { .app { grid-template-columns: 1fr; gap: 28px; } }
 
 /* Brief (inputs) */
 .brief { display: grid; gap: 26px; }
-.brief h2, .results-head h2 { font-size: 1.9rem; text-transform: uppercase; letter-spacing: .03em; line-height: 1.05; }
+.brief h2, .results-head h2 { font-size: 1.7rem; line-height: 1.15; }
 .head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .linkbtn { background: none; border: 0; padding: 10px 4px; color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: .18em; text-decoration-thickness: 1px; min-height: 44px; }
 
@@ -71,7 +79,7 @@ textarea { caret-color: var(--accent); }
 .quick button:hover { border-color: var(--accent); }
 
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
-legend, .label { display: block; padding: 0; margin-bottom: 10px; font: 700 1.12rem/1.2 var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+legend, .label { display: block; padding: 0; margin-bottom: 10px; font: 700 1.1rem/1.25 var(--font-display); }
 .hint { color: var(--muted); font-size: .9rem; margin-top: 8px; }
 
 /* radio and checkbox controls */
@@ -120,7 +128,7 @@ button.line:hover { background: var(--accent-soft); }
 .cover { display: block; width: 100%; aspect-ratio: 3 / 4; border-radius: 0; overflow: hidden; background: #0b1220; }
 .cover svg, .cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .info { display: grid; gap: 12px; align-content: start; min-width: 0; }
-.info h3 { font-size: clamp(1.7rem, 2.4vw + 1rem, 2.3rem); line-height: 1.02; text-transform: uppercase; letter-spacing: .015em; overflow-wrap: anywhere; }
+.info h3 { font-size: clamp(1.5rem, 1.6vw + 1rem, 2rem); line-height: 1.12; overflow-wrap: anywhere; }
 .meta { color: var(--muted); }
 .status { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 4px 12px 4px 10px; border-radius: 999px; font-weight: 700; font-size: .92rem; border: 1px solid currentColor; }
 .status.go { color: var(--go); background: var(--go-soft); } .status.standby { color: var(--standby); background: var(--standby-soft); }
@@ -141,11 +149,9 @@ button.line:hover { background: var(--accent-soft); }
 .copybox textarea { min-height: 120px; font-size: .92rem; }
 .foot { color: var(--muted); font-size: .88rem; max-width: 62ch; }
 
-/* One authored moment: spike marks go down one at a time when picks appear. */
-@keyframes spike { from { opacity: 0; transform: scale(1.9); } to { opacity: 1; transform: scale(1); } }
-@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-.cover .mark { transform-box: fill-box; transform-origin: center; animation: spike .5s var(--ease) backwards; animation-delay: calc(var(--i) * 70ms + var(--card) * 160ms); }
-.cover .route { animation: fade .6s ease-out backwards; animation-delay: calc(var(--card) * 160ms + 200ms); }
+/* One authored moment: each cover's scene rises into place, card by card, when picks appear. */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.cover .scene { animation: rise .7s var(--ease) backwards; animation-delay: calc(var(--card, 0) * 160ms); }
 
 /* phone: cover shrinks beside the text */
 @media (max-width: 600px) {
@@ -155,22 +161,23 @@ button.line:hover { background: var(--accent-soft); }
   .info > h3, .info > .meta, .info > .status { grid-column: 2; }
   .info > .rows, .info > .chips, .info > .fine { grid-column: 1 / -1; }
   .rows > div { grid-template-columns: 1fr; gap: 0; }
-  .info h3 { font-size: 1.55rem; }
+  .info h3 { font-size: 1.35rem; }
 }
 .jump { position: fixed; left: 16px; right: 16px; bottom: 14px; z-index: 5; display: none; align-items: center; justify-content: center; gap: 8px;
   min-height: 52px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; box-shadow: 0 6px 18px rgba(5, 10, 25, .35); }
 .jump svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 900px) { .jump.on { display: flex; } }
 @media (prefers-reduced-motion: reduce) {
-  .cover .mark, .cover .route { animation: none; }
+  .cover .scene, .marquee::after { animation: none; }
   .face { transition: none; }
 }
 </style>
 </head>
 <body>
 <div class="shell">
-  <header class="bar">
-    <h1>Broadway Concierge</h1>
+  <header class="marquee">
+    <span class="bulbs-alt" aria-hidden="true"></span>
+    <h1>Broadway <em>Concierge</em></h1>
     <p>Three shows for your night. Tap what fits and the picks update as you go.</p>
   </header>
 
@@ -356,16 +363,172 @@ const SHOWS = /*__CATALOG__*/null;
   // ---------------------------------------------------------------- cover art: a blocking diagram per show
   function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function rng(seed) { return function () { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-  const TAPE = ["#ff4f9a", "#2fd17c", "#ffd23f", "#33c7ff", "#ff8a3d"];
+  // ---------------------------------------------------------------- cover art: an original little scene per show
+  // These are generic illustrations (a skyline, a lantern, a teacup), not the shows' official artwork or characters.
+  const SW = 216, SH = 224;
+  const ART = { // title -> [scene, sky top, sky bottom, silhouette, highlight]
+    "Wicked": ["spires", "#0f3d2e", "#2f8f5b", "#07211a", "#d9ffb0"],
+    "Harry Potter and the Cursed Child": ["castle", "#1a1b3a", "#4b3f7a", "#0c0c1e", "#ffd66b"],
+    "The Book of Mormon": ["door", "#1d5fa8", "#8fd0ff", "#123a6b", "#fff3b0"],
+    "& Juliet": ["balcony", "#5a1a5e", "#ff7aa8", "#2a0b2e", "#ffe08a"],
+    "Hadestown": ["rails", "#1e1612", "#7a3b1e", "#0b0705", "#ffb347"],
+    "Maybe Happy Ending": ["robots", "#1b3b5a", "#8fc7c0", "#0e2236", "#ff9ec0"],
+    "Schmigadoon!": ["hills", "#5ab0e8", "#c8f0b0", "#1f5a2a", "#fff2a8"],
+    "Buena Vista Social Club": ["palm", "#e8742a", "#ffd27a", "#6b2a10", "#fff7d6"],
+    "860": ["spotlight", "#1a1520", "#3a2f46", "#0a080d", "#fff0c4"],
+    "Aladdin": ["dunes", "#2b1b5e", "#e08a3c", "#150b33", "#ffe49a"],
+    "Chicago": ["artdeco", "#120808", "#7a1020", "#050202", "#f4d27a"],
+    "A Few Good Men": ["scales", "#1c2b3f", "#5b7390", "#0d1520", "#f0e6c8"],
+    "The Great Gatsby": ["pier", "#0b2a2a", "#1d6b5a", "#04100f", "#e6c35a"],
+    "Hamilton": ["quill", "#1a2440", "#52607f", "#0a1020", "#f2e3b3"],
+    "The Imaginary Invalid": ["bottle", "#4a2a4a", "#d9a6b8", "#2a132a", "#fff1d0"],
+    "Just in Time": ["clock", "#1a1a2e", "#41507a", "#090912", "#ffd27a"],
+    "The Lion King": ["savanna", "#c0392b", "#ffb347", "#3a1208", "#fff2b0"],
+    "The Lost Boys": ["bats", "#150a2b", "#6a1fa0", "#07030f", "#ff4fd8"],
+    "MJ": ["dancefloor", "#0d0d1a", "#3b1d6e", "#05050c", "#7ae8ff"],
+    "Oh, Mary!": ["teacup", "#7a2e46", "#f0b8b8", "#3e1424", "#fff4e0"],
+    "Operation Mincemeat": ["map", "#2a3d5a", "#9db7cc", "#142033", "#f4e6c0"],
+    "Other Desert Cities": ["cactus", "#d0603a", "#f6c98a", "#5a2312", "#fff3dc"],
+    "The Outsiders": ["poles", "#3a2a6a", "#ff9a62", "#150f2c", "#ffd9a0"],
+    "Paranormal Activity": ["doorlight", "#05060a", "#1a1f2a", "#000000", "#e8f0ff"],
+    "Richard O'Brien's The Rocky Horror Show": ["bolt", "#1a0a1a", "#a0104a", "#080308", "#ffe14d"],
+    "School Girls; Or, The African Mean Girls Play": ["lockers", "#e0457b", "#ffb3cf", "#6a0f35", "#fff0f5"],
+    "SIX The Musical": ["crowns", "#2a0f4a", "#8a3fd0", "#12062a", "#ffd75e"],
+    "Stranger Things: The First Shadow": ["forest", "#0a0a14", "#4a0f1a", "#030308", "#ff3b3b"],
+    "Two Strangers (Carry a Cake Across New York)": ["skyline", "#1f2f5a", "#f2a65a", "#0c1430", "#fff0d0"],
+    "Wanted": ["mesa", "#b0471c", "#f6b64a", "#4a1c0a", "#fff0c0"],
+    "Here There Are Blueberries": ["berries", "#2a3350", "#7f8fb5", "#121a30", "#b9c6ff"],
+    "Downstate": ["house", "#1a1a1f", "#3d3d4a", "#08080c", "#ffcf70"],
+    "The Fantasticks": ["wall", "#241a4a", "#7a5fc0", "#0f0a26", "#fff4c4"],
+    "Much Ado About Nothing": ["masks", "#d98a3a", "#f7d9a0", "#5a2a0e", "#fff6e0"],
+  };
+  const SCENE_NAMES = ["spires", "castle", "door", "balcony", "rails", "robots", "hills", "palm", "spotlight", "dunes", "artdeco", "scales", "pier", "quill", "bottle", "clock", "savanna", "bats", "dancefloor", "teacup", "map", "cactus", "poles", "doorlight", "bolt", "lockers", "crowns", "forest", "skyline", "mesa", "berries", "house", "wall", "masks"];
 
-  function layoutFor(show) {
-    const t = (show.tags || []).join(" ").toLowerCase();
-    if (/horror|scary|thriller/.test(t)) return "diagonal";
-    if (/funny|comedy|camp|farce|satire/.test(t)) return "scatter";
-    if (/spectacle|special effects|fantasy/.test(t)) return "radial";
-    if (/emotional|romantic|myth/.test(t)) return "route";
-    if (/jukebox|rock|pop|jazz|music|hip-hop|concert|big-band|dance/.test(t)) return "line";
-    return "symmetric";
+  const disc = (x, y, r, col, op) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" opacity="${op || 1}"/>`;
+  const spark = (x, y, s, col) => `<path d="M${x} ${y - s}L${x + s * .28} ${y - s * .28}L${x + s} ${y}L${x + s * .28} ${y + s * .28}L${x} ${y + s}L${x - s * .28} ${y + s * .28}L${x - s} ${y}L${x - s * .28} ${y - s * .28}Z" fill="${col}"/>`;
+  const sparks = (r, c, n, maxY) => Array.from({ length: n }, () => spark(8 + r() * 200, 6 + r() * maxY, 2 + r() * 3.5, c.hi)).join("");
+  const grd = (c, y) => `<rect x="0" y="${y}" width="${SW}" height="${SH - y}" fill="${c.fg}"/>`;
+  const heart = (x, y, s, col) => `<path d="M${x} ${y + s * .9}C${x - s * 1.6} ${y - s * .1} ${x - s * .7} ${y - s * 1.1} ${x} ${y - s * .35}C${x + s * .7} ${y - s * 1.1} ${x + s * 1.6} ${y - s * .1} ${x} ${y + s * .9}Z" fill="${col}"/>`;
+  const note = (x, y, s, col) => `<ellipse cx="${x}" cy="${y}" rx="${s * .62}" ry="${s * .44}" fill="${col}" transform="rotate(-22 ${x} ${y})"/><rect x="${x + s * .45}" y="${y - s * 2.3}" width="${s * .2}" height="${s * 2.3}" fill="${col}"/>`;
+  const crown = (x, y, w, col) => `<path d="M${x} ${y}L${x + w * .12} ${y - w * .42}L${x + w * .32} ${y - w * .12}L${x + w * .5} ${y - w * .52}L${x + w * .68} ${y - w * .12}L${x + w * .88} ${y - w * .42}L${x + w} ${y}Z" fill="${col}"/><rect x="${x}" y="${y}" width="${w}" height="${w * .13}" fill="${col}"/>`;
+  const bat = (x, y, s, col) => `<path d="M${x - s} ${y - s * .2}Q${x - s * .5} ${y - s * .8} ${x} ${y}Q${x + s * .5} ${y - s * .8} ${x + s} ${y - s * .2}Q${x + s * .6} ${y + s * .5} ${x} ${y + s * .3}Q${x - s * .6} ${y + s * .5} ${x - s} ${y - s * .2}Z" fill="${col}"/>`;
+  const mask = (x, y, s, rot, c) => `<g transform="rotate(${rot} ${x} ${y})"><path d="M${x - s} ${y - s * .3}Q${x} ${y - s * .95} ${x + s} ${y - s * .3}Q${x + s * .9} ${y + s * .65} ${x} ${y + s * .8}Q${x - s * .9} ${y + s * .65} ${x - s} ${y - s * .3}Z" fill="${c.hi}"/><ellipse cx="${x - s * .42}" cy="${y - s * .08}" rx="${s * .22}" ry="${s * .13}" fill="${c.fg}"/><ellipse cx="${x + s * .42}" cy="${y - s * .08}" rx="${s * .22}" ry="${s * .13}" fill="${c.fg}"/><path d="M${x - s * .3} ${y + s * .38}Q${x} ${y + s * .55} ${x + s * .3} ${y + s * .38}" stroke="${c.fg}" stroke-width="2.5" fill="none" stroke-linecap="round"/></g>`;
+
+  const SCENES = {
+    spires: (c, r) => { let o = sparks(r, c, 9, 80) + disc(158, 54, 20, c.hi, .9);
+      for (let i = 0; i < 9; i++) { const x = 4 + i * 24, h = 70 + r() * 95, w = 15;
+        o += `<rect x="${x}" y="${SH - h}" width="${w}" height="${h}" fill="${c.fg}"/><path d="M${x - 1} ${SH - h}L${x + w / 2} ${SH - h - 30 - r() * 20}L${x + w + 1} ${SH - h}Z" fill="${c.fg}"/>`;
+        for (let k = 0; k < 3; k++) o += `<rect x="${x + 5}" y="${SH - h + 12 + k * 22}" width="4" height="7" fill="${c.hi}" opacity=".8"/>`; } return o; },
+    castle: (c, r) => sparks(r, c, 10, 80) + disc(42, 40, 16, c.hi, .9) +
+      `<g fill="${c.fg}"><rect x="38" y="112" width="140" height="112"/><rect x="24" y="82" width="34" height="142"/><rect x="158" y="82" width="34" height="142"/><rect x="92" y="66" width="32" height="158"/>` +
+      `<path d="M20 84L41 40L62 84Z"/><path d="M154 84L175 40L196 84Z"/><path d="M88 68L108 14L128 68Z"/></g>` +
+      `<path d="M96 224V192A12 12 0 0 1 120 192V224Z" fill="${c.hi}" opacity=".9"/>` +
+      [[38, 100], [172, 100], [102, 90], [102, 118], [66, 130], [138, 130], [66, 160], [138, 160]].map(([x, y]) => `<rect x="${x}" y="${y}" width="6" height="11" fill="${c.hi}" opacity=".85"/>`).join(""),
+    door: (c, r) => { let o = ""; for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, b = ((i + .5) / 16) * Math.PI * 2;
+        o += `<path d="M108 140L${108 + Math.cos(a) * 300} ${140 + Math.sin(a) * 300}L${108 + Math.cos(b) * 300} ${140 + Math.sin(b) * 300}Z" fill="${c.hi}" opacity=".2"/>`; }
+      return o + grd(c, 196) + `<rect x="66" y="64" width="84" height="134" fill="${c.fg}"/><rect x="75" y="73" width="66" height="125" fill="${c.hi}"/><circle cx="130" cy="140" r="4" fill="${c.fg}"/>` + sparks(r, c, 5, 40); },
+    balcony: (c, r) => sparks(r, c, 14, 110) + heart(108, 92, 14, c.hi) +
+      `<path fill-rule="evenodd" d="M0 0H216V224H0Z M56 192V92A52 52 0 0 1 160 92V192Z" fill="${c.fg}"/>` +
+      `<rect x="52" y="150" width="112" height="6" fill="${c.fg}"/>` + Array.from({ length: 10 }, (_, i) => `<rect x="${60 + i * 11.5}" y="156" width="3" height="36" fill="${c.fg}"/>`).join("") + `<rect x="46" y="190" width="124" height="34" fill="${c.fg}"/>`,
+    rails: (c, r) => { let o = disc(108, 128, 62, c.hi, .22) + disc(108, 126, 20, c.hi, .8);
+      o += `<path d="M30 224L103 126M186 224L113 126" stroke="${c.fg}" stroke-width="7" fill="none"/>`;
+      for (let t = .1; t <= 1; t += .12) { const y = 126 + t * 98, hw = 6 + t * 82; o += `<path d="M${108 - hw} ${y}H${108 + hw}" stroke="${c.fg}" stroke-width="${1 + t * 5}"/>`; }
+      return o + `<path fill-rule="evenodd" d="M0 0H216V224H0Z M14 224V118A94 94 0 0 1 202 118V224Z" fill="${c.fg}"/>`; },
+    robots: (c, r) => sparks(r, c, 10, 90) + heart(108, 68, 11, c.hi) + grd(c, 178) +
+      `<g fill="${c.fg}"><rect x="38" y="96" width="48" height="36" rx="8"/><rect x="34" y="136" width="56" height="42" rx="8"/><rect x="60" y="80" width="3" height="16"/><rect x="26" y="142" width="8" height="26" rx="4"/><rect x="90" y="142" width="8" height="26" rx="4"/>` +
+      `<circle cx="150" cy="108" r="22"/><rect x="132" y="132" width="40" height="46" rx="12"/><rect x="148" y="78" width="3" height="10"/></g>` +
+      `<circle cx="52" cy="112" r="5" fill="${c.hi}"/><circle cx="72" cy="112" r="5" fill="${c.hi}"/><circle cx="150" cy="78" r="4" fill="${c.hi}"/><circle cx="141" cy="106" r="4" fill="${c.hi}"/><circle cx="159" cy="106" r="4" fill="${c.hi}"/>`,
+    hills: (c, r) => disc(150, 60, 26, c.hi, .95) + `<path d="M0 150Q50 100 110 140T216 120V224H0Z" fill="${c.fg}" opacity=".45"/>` +
+      `<path d="M0 170Q60 120 120 160T216 150V224H0Z" fill="${c.fg}" opacity=".75"/>` + [[40, 142], [90, 150], [150, 146]].map(([x, y]) => `<rect x="${x}" y="${y}" width="16" height="12" fill="${c.fg}"/><path d="M${x - 3} ${y}L${x + 8} ${y - 10}L${x + 19} ${y}Z" fill="${c.fg}"/><rect x="${x + 6}" y="${y + 4}" width="4" height="5" fill="${c.hi}"/>`).join("") +
+      `<path d="M0 200Q70 160 130 190T216 180V224H0Z" fill="${c.fg}"/>`,
+    palm: (c, r) => disc(108, 112, 66, c.hi, .92) + Array.from({ length: 6 }, (_, i) => `<rect x="30" y="${130 + i * 12}" width="156" height="${2 + i}" fill="${c.s2}"/>`).join("") + grd(c, 176) +
+      `<path d="M150 180Q158 130 124 78" stroke="${c.fg}" stroke-width="8" fill="none" stroke-linecap="round"/>` +
+      [[-70, -10], [-50, -42], [-8, -56], [38, -46], [60, -8], [-30, 6]].map(([dx, dy]) => `<path d="M124 78Q${124 + dx * .6} ${78 + dy - 18} ${124 + dx} ${78 + dy + 26}" stroke="${c.fg}" stroke-width="6" fill="none" stroke-linecap="round"/>`).join("") +
+      note(40, 150, 7, c.hi) + note(64, 134, 6, c.hi),
+    spotlight: (c, r) => `<path d="M108 0L40 176H176Z" fill="${c.hi}" opacity=".22"/>` + grd(c, 176) + `<ellipse cx="108" cy="178" rx="68" ry="12" fill="${c.hi}" opacity=".55"/>` +
+      `<g stroke="${c.fg}" stroke-width="4" stroke-linecap="round" fill="none"><path d="M96 150L90 178M120 150L126 178M108 152V178"/><path d="M150 178V104"/></g><ellipse cx="108" cy="148" rx="22" ry="5" fill="${c.fg}"/><rect x="146" y="92" width="9" height="16" rx="4" fill="${c.fg}"/>` + sparks(r, c, 6, 60),
+    dunes: (c, r) => sparks(r, c, 12, 90) + `<path d="M158 24A26 26 0 1 0 180 66A21 21 0 1 1 158 24Z" fill="${c.hi}"/>` +
+      [[20, 24, 100], [54, 20, 80], [92, 36, 116], [140, 22, 90], [172, 26, 106]].map(([x, w, y]) => `<rect x="${x}" y="${y}" width="${w}" height="${176 - y}" fill="${c.fg}"/><path d="M${x} ${y}C${x} ${y - 18} ${x + w / 2} ${y - 14} ${x + w / 2} ${y - 34}C${x + w / 2} ${y - 14} ${x + w} ${y - 18} ${x + w} ${y}Z" fill="${c.fg}"/><rect x="${x + w / 2 - 1}" y="${y - 44}" width="2" height="12" fill="${c.fg}"/>`).join("") +
+      `<path d="M0 180Q60 150 120 176T216 160V224H0Z" fill="${c.fg}"/><path d="M0 206Q80 180 150 204T216 196V224H0Z" fill="${c.fg}" opacity=".7"/>`,
+    artdeco: (c, r) => { let o = ""; for (let i = -7; i <= 7; i++) { const a = -Math.PI / 2 + i * .21, b = a + .105;
+        o += `<path d="M108 196L${108 + Math.cos(a) * 280} ${196 + Math.sin(a) * 280}L${108 + Math.cos(b) * 280} ${196 + Math.sin(b) * 280}Z" fill="${c.hi}" opacity=".24"/>`; }
+      [46, 76, 106].forEach((rr) => { o += `<path d="M${108 - rr} 196A${rr} ${rr} 0 0 1 ${108 + rr} 196" stroke="${c.hi}" stroke-width="2" fill="none" opacity=".7"/>`; });
+      return o + grd(c, 196) + `<g fill="${c.fg}"><rect x="86" y="146" width="44" height="9" rx="2"/><rect x="86" y="104" width="7" height="50" rx="2"/><rect x="90" y="155" width="5" height="42"/><rect x="121" y="155" width="5" height="42"/></g>`; },
+    scales: (c, r) => [26, 66, 126, 166].map((x) => `<rect x="${x}" y="40" width="24" height="136" fill="${c.fg}" opacity=".5"/><rect x="${x - 4}" y="36" width="32" height="8" fill="${c.fg}" opacity=".5"/>`).join("") +
+      disc(108, 70, 40, c.hi, .22) + grd(c, 176) +
+      `<g fill="${c.fg}"><rect x="105" y="60" width="6" height="118"/><rect x="48" y="64" width="120" height="6"/><rect x="84" y="172" width="48" height="8"/><path d="M26 124H80Q70 144 53 144Q36 144 26 124Z"/><path d="M136 124H190Q180 144 163 144Q146 144 136 124Z"/></g>` +
+      `<path d="M50 67L28 124M50 67L78 124M166 67L138 124M166 67L188 124" stroke="${c.fg}" stroke-width="2" fill="none"/>`,
+    pier: (c, r) => sparks(r, c, 10, 70) + disc(170, 112, 34, c.hi, .22) + disc(170, 112, 7, c.hi) +
+      [[8, 70], [30, 96], [52, 56], [74, 84], [96, 110], [120, 90]].map(([x, h]) => `<rect x="${x}" y="${150 - h}" width="18" height="${h}" fill="${c.fg}"/><rect x="${x + 4}" y="${150 - h - 8}" width="10" height="8" fill="${c.fg}"/>`).join("") +
+      `<rect x="0" y="150" width="${SW}" height="74" fill="${c.fg}" opacity=".6"/>` + Array.from({ length: 7 }, (_, i) => `<rect x="${60 + i * 12}" y="${156 + i * 8}" width="${96 - i * 12}" height="2" fill="${c.hi}" opacity=".4"/>`).join("") +
+      `<rect x="0" y="140" width="176" height="8" fill="${c.fg}"/>` + Array.from({ length: 8 }, (_, i) => `<rect x="${8 + i * 22}" y="148" width="4" height="30" fill="${c.fg}"/>`).join(""),
+    quill: (c, r) => { let o = ""; for (let i = 0; i < 11; i++) { const a = Math.PI + (i / 10) * Math.PI; o += spark(108 + Math.cos(a) * 84, 128 + Math.sin(a) * 84, 5, c.hi); }
+      return o + `<path d="M98 176C118 120 150 78 180 30C152 50 128 66 112 94C102 112 98 140 98 176Z" fill="${c.hi}"/><path d="M99 176C122 126 150 80 178 34" stroke="${c.fg}" stroke-width="2" fill="none"/>` +
+        `<path d="M70 196H146L140 214H76Z" fill="${c.fg}"/><rect x="84" y="170" width="48" height="30" rx="8" fill="${c.fg}"/><rect x="96" y="160" width="24" height="12" fill="${c.fg}"/>` + [0, 1, 2].map((i) => `<rect x="30" y="${60 + i * 12}" width="${52 - i * 8}" height="2" fill="${c.hi}" opacity=".3"/>`).join(""); },
+    bottle: (c, r) => Array.from({ length: 14 }, (_, i) => `<path d="M${i * 20 - 30} 224L${i * 20 + 110} 0" stroke="${c.fg}" stroke-width="2" opacity=".12"/>`).join("") + grd(c, 180) +
+      `<rect x="97" y="58" width="22" height="12" rx="3" fill="${c.hi}"/><rect x="94" y="68" width="28" height="22" fill="${c.fg}"/><rect x="74" y="88" width="68" height="94" rx="10" fill="${c.fg}"/><rect x="82" y="108" width="52" height="46" rx="3" fill="${c.hi}"/><path d="M108 116V146M93 131H123" stroke="${c.fg}" stroke-width="7"/>` +
+      [[34, 192, 8], [52, 202, 6], [176, 194, 7], [160, 206, 5]].map(([x, y, q]) => `<circle cx="${x}" cy="${y}" r="${q}" fill="${c.hi}"/>`).join(""),
+    clock: (c, r) => { let o = disc(108, 100, 72, c.hi, .2) + `<circle cx="108" cy="100" r="68" stroke="${c.fg}" stroke-width="8" fill="none"/>`;
+      for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; o += `<path d="M${108 + Math.sin(a) * 56} ${100 - Math.cos(a) * 56}L${108 + Math.sin(a) * 63} ${100 - Math.cos(a) * 63}" stroke="${c.fg}" stroke-width="3"/>`; }
+      return o + `<path d="M108 100L102 46M108 100L88 78" stroke="${c.fg}" stroke-width="5" stroke-linecap="round"/>` + disc(108, 100, 6, c.fg) + grd(c, 190) + Array.from({ length: 18 }, (_, i) => `<rect x="${i * 12 + 2}" y="190" width="6" height="${8 + (i % 3) * 5}" fill="${c.fg}"/>`).join("") + note(28, 70, 8, c.hi) + note(186, 150, 8, c.hi) + note(190, 52, 6, c.hi); },
+    savanna: (c, r) => disc(108, 118, 72, c.hi, .95) + `<path d="M0 150Q60 130 120 148T216 140V224H0Z" fill="${c.fg}" opacity=".5"/>` + grd(c, 158) +
+      `<path d="M50 160Q54 126 62 100M62 118Q44 110 34 96M62 118Q76 106 88 100" stroke="${c.fg}" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="62" cy="96" rx="48" ry="9" fill="${c.fg}"/><ellipse cx="44" cy="102" rx="26" ry="5" fill="${c.fg}"/>` +
+      `<path d="M150 70q5 -6 10 0q5 -6 10 0M170 52q4 -5 8 0q4 -5 8 0M132 46q3 -4 6 0q3 -4 6 0" stroke="${c.fg}" stroke-width="2" fill="none"/>` + Array.from({ length: 26 }, (_, i) => `<path d="M${i * 8.4 + 2} 224Q${i * 8.4 + 4} 196 ${i * 8.4 + 8} ${180 + (i % 4) * 4}" stroke="${c.fg}" stroke-width="2" fill="none"/>`).join(""),
+    bats: (c, r) => disc(108, 84, 50, c.hi, .95) + [[60, 60, 18], [150, 50, 14], [100, 120, 12], [176, 110, 18], [40, 108, 11], [128, 32, 9]].map(([x, y, s]) => bat(x, y, s, c.fg)).join("") +
+      Array.from({ length: 9 }, (_, i) => { const h = 40 + ((i * 37) % 60), x = i * 24 + 2; return `<rect x="${x}" y="${190 - h}" width="22" height="${h + 40}" fill="${c.fg}"/>` + `<rect x="${x + 6}" y="${196 - h}" width="4" height="6" fill="${c.hi}" opacity=".7"/>`; }).join("") +
+      `<path d="M0 205H216" stroke="${c.hi}" stroke-width="3"/>`,
+    dancefloor: (c, r) => `<path d="M108 0L70 150H146Z" fill="${c.hi}" opacity=".2"/><path d="M30 0L10 130H90Z" fill="${c.hi}" opacity=".13"/><path d="M186 0L126 130H206Z" fill="${c.hi}" opacity=".13"/>` +
+      `<path d="M0 150H216V224H0Z" fill="${c.fg}"/>` + [0, 1, 2, 3, 4].map((k) => `<path d="M0 ${150 + k * k * 5 + 4}H216" stroke="${c.hi}" stroke-width="1.5" opacity=".5"/>`).join("") +
+      Array.from({ length: 13 }, (_, i) => `<path d="M${108 + (i - 6) * 6} 150L${108 + (i - 6) * 36} 224" stroke="${c.hi}" stroke-width="1.5" opacity=".5"/>`).join("") + `<ellipse cx="108" cy="176" rx="46" ry="10" fill="${c.hi}" opacity=".4"/>` + sparks(r, c, 8, 100),
+    teacup: (c, r) => [0, 1, 2].map((i) => disc(108, 112, 80 - i * 20, c.hi, .09)).join("") + `<g fill="${c.fg}"><path d="M60 100H156C156 150 136 172 108 172C80 172 60 150 60 100Z"/><ellipse cx="108" cy="178" rx="74" ry="9"/></g>` +
+      `<path d="M154 112C188 108 188 148 150 146" stroke="${c.fg}" stroke-width="8" fill="none"/>` + [84, 108, 132].map((x, i) => `<path d="M${x} 90C${x - 10} 74 ${x + 10} 62 ${x} 44C${x - 6} 34 ${x + 4} 26 ${x} 18" stroke="${c.hi}" stroke-width="4" fill="none" opacity=".7" stroke-linecap="round"/>`).join("") + heart(108, 134, 9, c.hi) + sparks(r, c, 5, 40),
+    map: (c, r) => Array.from({ length: 5 }, (_, i) => `<path d="M0 ${186 + i * 9}Q54 ${176 + i * 9} 108 ${186 + i * 9}T216 ${186 + i * 9}" stroke="${c.hi}" stroke-width="2" fill="none" opacity=".4"/>`).join("") +
+      `<g transform="rotate(-4 108 100)"><rect x="24" y="36" width="168" height="126" fill="${c.hi}" opacity=".95"/><path d="M80 36V162M136 36V162M24 98H192" stroke="${c.fg}" stroke-width="1" opacity=".18"/>` +
+      `<path d="M52 142C70 104 96 126 116 92S150 84 164 58" stroke="${c.fg}" stroke-width="3" stroke-dasharray="6 5" fill="none"/><path d="M158 52L170 64M170 52L158 64" stroke="${c.fg}" stroke-width="4"/><circle cx="52" cy="142" r="5" fill="${c.fg}"/><path d="M60 62Q74 48 92 60Q96 76 76 80Q58 80 60 62Z" fill="${c.fg}" opacity=".35"/></g>`,
+    cactus: (c, r) => disc(150, 70, 32, c.hi, .95) + `<path d="M0 150L20 120H70L84 140H120L136 118H190L216 146V224H0Z" fill="${c.fg}" opacity=".5"/>` + grd(c, 170) +
+      `<rect x="24" y="122" width="100" height="6" fill="${c.fg}"/><rect x="34" y="128" width="80" height="42" fill="${c.fg}"/><rect x="42" y="138" width="46" height="14" fill="${c.hi}" opacity=".9"/><rect x="96" y="144" width="12" height="26" fill="${c.hi}" opacity=".5"/>` +
+      `<g stroke="${c.fg}" stroke-width="11" stroke-linecap="round" fill="none"><path d="M164 176V90"/><path d="M164 138H146V112"/><path d="M164 124H182V102"/></g>`,
+    poles: (c, r) => disc(108, 152, 52, c.hi, .92) + sparks(r, c, 6, 60) + grd(c, 176) +
+      [44, 168].map((x) => `<rect x="${x}" y="30" width="5" height="190" fill="${c.fg}"/><rect x="${x - 16}" y="44" width="37" height="4" fill="${c.fg}"/><rect x="${x - 12}" y="64" width="29" height="3" fill="${c.fg}"/>`).join("") +
+      `<path d="M28 46Q106 80 152 46M28 66Q106 100 152 66M60 46Q-10 70 -20 56M184 46Q230 70 250 56" stroke="${c.fg}" stroke-width="1.6" fill="none"/>` + `<path d="M0 190H216M0 204H216" stroke="${c.hi}" stroke-width="1" opacity=".35"/>`,
+    doorlight: (c, r) => `<path d="M70 60H146V200H70Z" fill="${c.hi}"/><path d="M70 200H146L206 224H10Z" fill="${c.hi}" opacity=".35"/><path d="M70 60L124 74V186L70 200Z" fill="${c.fg}"/>` +
+      `<circle cx="110" cy="132" r="3" fill="${c.hi}"/><circle cx="26" cy="26" r="6" fill="#ff3b3b"/><path d="M12 56V72H28M204 56V72H188M12 200V184H28M204 200V184H188" stroke="${c.hi}" stroke-width="3" fill="none" opacity=".8"/>`,
+    bolt: (c, r) => sparks(r, c, 12, 90) + `<g fill="${c.fg}"><rect x="40" y="130" width="136" height="94"/><rect x="28" y="96" width="38" height="128"/><rect x="150" y="96" width="38" height="128"/><path d="M24 98L47 54L70 98Z"/><path d="M146 98L169 54L192 98Z"/><path d="M36 132L108 84L180 132Z"/></g>` +
+      [[42, 120], [160, 120], [74, 150], [130, 150], [96, 172]].map(([x, y]) => `<rect x="${x}" y="${y}" width="8" height="13" fill="${c.hi}" opacity=".85"/>`).join("") +
+      `<path d="M130 0L82 102H112L92 176L152 76H120Z" fill="${c.hi}"/>`,
+    lockers: (c, r) => { let o = Array.from({ length: 9 }, (_, i) => `<path d="M${i * 26 - 10} 20L${i * 26 + 16} 20L${i * 26 + 3} 44Z" fill="${c.hi}" opacity="${i % 2 ? .9 : .6}"/>`).join("") + `<path d="M0 20H216" stroke="${c.fg}" stroke-width="2"/>`;
+      for (let row = 0; row < 2; row++) for (let i = 0; i < 6; i++) { const x = 4 + i * 35, y = 70 + row * 78;
+        o += `<rect x="${x}" y="${y}" width="32" height="74" fill="${c.fg}"/>` + [0, 1, 2].map((k) => `<rect x="${x + 6}" y="${y + 8 + k * 5}" width="20" height="2" fill="${c.hi}" opacity=".5"/>`).join("") + `<rect x="${x + 24}" y="${y + 42}" width="4" height="12" fill="${c.hi}"/>`; }
+      return o + sparks(r, c, 5, 20); },
+    crowns: (c, r) => { let o = disc(108, 100, 90, c.hi, .12); [0, 1].forEach((row) => [0, 1, 2].forEach((col) => { const x = 20 + col * 62, y = 92 + row * 70; o += crown(x, y, 50, c.hi).replace(/fill="[^"]+"/g, `fill="${c.hi}" opacity="${.65 + .35 * ((row + col) % 2)}"`); })); return o + sparks(r, c, 8, 50) + `<rect x="0" y="206" width="${SW}" height="18" fill="${c.fg}"/>`; },
+    forest: (c, r) => disc(150, 54, 26, c.hi, .95) + Array.from({ length: 3 }, (_, k) => Array.from({ length: 9 }, (_, i) => { const x = i * 26 - 10 + (k % 2) * 12, y = 150 + k * 22, h = 70 + ((i * 29 + k * 17) % 40);
+        return `<path d="M${x} ${y + 60}L${x + 14} ${y - h + 40}L${x + 28} ${y + 60}Z" fill="${c.fg}" opacity="${.5 + k * .25}"/>`; }).join("")).join("") +
+      [190, 170, 150].map((y, i) => `<ellipse cx="${60 + i * 50}" cy="${y}" rx="90" ry="9" fill="${c.hi}" opacity=".1"/>`).join("") +
+      `<path d="M30 224C20 190 50 180 40 150M170 224C180 200 150 190 168 160M104 224C96 204 118 196 108 176" stroke="${c.hi}" stroke-width="3" fill="none" opacity=".6"/>`,
+    skyline: (c, r) => disc(150, 60, 28, c.hi, .9) + [[0, 90, 26], [26, 120, 24], [50, 80, 28], [78, 150, 22], [100, 110, 30], [130, 96, 26], [156, 130, 24], [180, 84, 36]].map(([x, h, w]) => `<rect x="${x}" y="${190 - h}" width="${w}" height="${h + 40}" fill="${c.fg}"/>` + Array.from({ length: 4 }, (_, k) => `<rect x="${x + 5}" y="${196 - h + k * 18}" width="4" height="6" fill="${c.hi}" opacity=".75"/>`).join("")).join("") +
+      `<rect x="0" y="190" width="${SW}" height="34" fill="${c.fg}"/><rect x="66" y="150" width="84" height="54" rx="3" fill="${c.hi}"/><path d="M108 150V204M66 177H150" stroke="${c.fg}" stroke-width="6"/><path d="M108 150Q92 130 98 142M108 150Q124 130 118 142" stroke="${c.fg}" stroke-width="5" fill="none"/>`,
+    mesa: (c, r) => disc(108, 104, 58, c.hi, .95) + `<path d="M0 160L10 120H56L66 136H110L122 108H182L194 140H216V224H0Z" fill="${c.fg}" opacity=".6"/>` + grd(c, 176) +
+      `<g fill="${c.fg}"><path d="M108 40L113 54H128L116 63L121 77L108 68L95 77L100 63L88 54H103Z" transform="translate(0 0)"/></g><circle cx="108" cy="62" r="26" stroke="${c.fg}" stroke-width="4" fill="none"/>` +
+      `<g stroke="${c.fg}" stroke-width="9" stroke-linecap="round" fill="none"><path d="M34 184V140"/><path d="M34 168H22V150M34 158H46V144"/></g><circle cx="168" cy="188" r="12" stroke="${c.fg}" stroke-width="2" fill="none" opacity=".8"/>`,
+    berries: (c, r) => sparks(r, c, 7, 60) + `<path d="M20 36C70 60 110 96 150 118C170 130 190 160 196 200" stroke="${c.fg}" stroke-width="5" fill="none" stroke-linecap="round"/>` +
+      [[50, 50, -30], [96, 74, 20], [120, 96, -40], [76, 90, 60]].map(([x, y, a]) => `<ellipse cx="${x}" cy="${y}" rx="22" ry="9" fill="${c.fg}" transform="rotate(${a} ${x} ${y})"/>`).join("") +
+      [[150, 132, 17], [174, 150, 15], [138, 158, 14], [162, 176, 16], [186, 184, 13], [128, 184, 12], [150, 202, 13]].map(([x, y, q]) => `<circle cx="${x}" cy="${y}" r="${q}" fill="${c.hi}"/><circle cx="${x}" cy="${y - q * .25}" r="${q * .22}" fill="${c.fg}"/>`).join(""),
+    house: (c, r) => disc(52, 48, 17, c.hi, .9) + sparks(r, c, 8, 70) + `<path d="M0 150Q80 130 216 156V224H0Z" fill="${c.fg}" opacity=".5"/>` + grd(c, 178) +
+      `<path d="M120 178V222L82 224L156 224Z" fill="${c.hi}" opacity=".22"/><g fill="${c.fg}"><rect x="68" y="112" width="84" height="68"/><path d="M58 114L110 70L162 114Z"/><rect x="132" y="76" width="12" height="26"/></g>` +
+      `<rect x="80" y="126" width="18" height="20" fill="${c.hi}"/><rect x="122" y="126" width="18" height="20" fill="${c.hi}" opacity=".35"/><rect x="101" y="150" width="18" height="30" fill="${c.hi}" opacity=".8"/>` +
+      [[24, 130], [190, 124]].map(([x, y]) => `<path d="M${x} ${y + 56}L${x + 14} ${y - 20}L${x + 28} ${y + 56}Z" fill="${c.fg}"/>`).join(""),
+    wall: (c, r) => disc(108, 88, 46, c.hi, .95) + sparks(r, c, 14, 80) + `<rect x="0" y="146" width="${SW}" height="78" fill="${c.fg}"/>` +
+      Array.from({ length: 4 }, (_, row) => Array.from({ length: 7 }, (_, i) => `<rect x="${i * 32 - (row % 2) * 16 + 2}" y="${152 + row * 16}" width="28" height="12" fill="${c.hi}" opacity=".13"/>`).join("")).join("") +
+      `<rect x="0" y="136" width="${SW}" height="12" fill="${c.fg}"/>` + heart(108, 124, 7, c.hi),
+    masks: (c, r) => sparks(r, c, 8, 60) + `<path fill-rule="evenodd" d="M0 0H216V224H0Z M14 224V132A28 28 0 0 1 70 132V224Z M80 224V132A28 28 0 0 1 136 132V224Z M146 224V132A28 28 0 0 1 202 132V224Z" fill="${c.fg}" opacity=".8"/>` +
+      mask(80, 108, 36, -14, c) + mask(138, 124, 32, 16, c) + `<path d="M0 196H216V224H0Z" fill="${c.fg}"/>`,
+  };
+
+  function paletteFor(show, seed) {
+    const a = ART[show.title];
+    if (a) return { scene: a[0], s1: a[1], s2: a[2], fg: a[3], hi: a[4] };
+    const hue = seed % 360;
+    return { scene: SCENE_NAMES[seed % SCENE_NAMES.length], s1: `hsl(${hue} 45% 16%)`, s2: `hsl(${(hue + 30) % 360} 50% 42%)`, fg: `hsl(${hue} 50% 7%)`, hi: `hsl(${(hue + 40) % 360} 90% 82%)` };
   }
   function coverTitle(title) {
     return title.replace(/ \(.*\)$/, "").replace(/[;:].*$/, "").replace(/^Richard O'Brien's /, "").replace(/^The (?=\w+ \w)/, "").toUpperCase();
@@ -376,61 +539,30 @@ const SHOWS = /*__CATALOG__*/null;
     if (cur) lines.push(cur); return lines;
   }
 
-  function coverSvg(show, rank, card) {
-    const seed = hash(show.title), r = rng(seed), hue = seed % 360;
-    const X0 = 30, X1 = 210, Y0 = 56, Y1 = 176, CX = 120, CY = (Y0 + Y1) / 2;
-    const col = () => TAPE[Math.floor(r() * TAPE.length)];
-    const pt = () => [X0 + 16 + r() * (X1 - X0 - 32), Y0 + 14 + r() * (Y1 - Y0 - 28)];
-    let i = 0;
-    const mark = (x, y, kind, c) => {
-      const k = i++;
-      const g = `<g class="mark" style="--i:${k};--card:${card}" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="square">`;
-      if (kind === 0) return g + `<path d="M${x - 6} ${y - 6}L${x + 6} ${y + 6}M${x + 6} ${y - 6}L${x - 6} ${y + 6}"/></g>`;
-      if (kind === 1) return g + `<path d="M${x - 7} ${y - 5}H${x + 7}M${x} ${y - 5}V${y + 7}"/></g>`;
-      if (kind === 2) return g + `<path d="M${x - 6} ${y - 7}V${y + 5}H${x + 6}"/></g>`;
-      return g + `<rect x="${x - 5}" y="${y - 5}" width="10" height="10"/></g>`;
-    };
-    const pick = () => Math.floor(r() * 4);
-    let marks = "", route = "";
-    const lay = layoutFor(show);
-    if (lay === "scatter") { for (let n = 0; n < 10; n++) { const [x, y] = pt(); marks += mark(x, y, pick(), col()); } }
-    else if (lay === "radial") { marks += mark(CX, CY, 3, TAPE[2]); for (let n = 0; n < 7; n++) { const a = (n / 7) * Math.PI * 2 + r() * .3, rr = 38 + (n % 2) * 22; marks += mark(CX + Math.cos(a) * rr * 1.45, CY + Math.sin(a) * rr * .85, pick(), col()); } }
-    else if (lay === "route") {
-      const a = [X0 + 24, Y1 - 22], b = [X1 - 24, Y0 + 22], c1 = [CX - 50 + r() * 40, Y0 + 20], c2 = [CX + 10 + r() * 50, Y1 - 10];
-      const c = col(); const ang = Math.atan2(b[1] - c2[1], b[0] - c2[0]);
-      route = `<g class="route" style="--card:${card}"><path d="M${a[0]} ${a[1]}C${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${b[0]} ${b[1]}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="5 4"/><path d="M0 0L-9 -4.5L-9 4.5Z" transform="translate(${b[0]} ${b[1]}) rotate(${ang * 180 / Math.PI})" fill="${c}"/></g>`;
-      marks += mark(a[0], a[1], 0, c) + mark(b[0], b[1], 3, c);
-      for (let n = 0; n < 3; n++) { const [x, y] = pt(); marks += mark(x, y, pick(), col()); }
-    }
-    else if (lay === "line") { const y0 = CY - 10 + r() * 20; for (let n = 0; n < 8; n++) marks += mark(X0 + 18 + n * ((X1 - X0 - 36) / 7), y0 + Math.sin(n * .9) * 8, n % 2 ? 1 : 0, col()); }
-    else if (lay === "diagonal") { for (let n = 0; n < 7; n++) { const t = n / 6; marks += mark(X0 + 18 + t * (X1 - X0 - 36), Y0 + 16 + t * (Y1 - Y0 - 32) + (r() - .5) * 14, pick(), n % 3 === 0 ? TAPE[0] : col()); } }
-    else { for (let n = 0; n < 4; n++) { const x = CX - 20 - r() * 62, y = Y0 + 16 + r() * (Y1 - Y0 - 32), k = pick(), c = col(); marks += mark(x, y, k, c) + mark(2 * CX - x, y, k, c); } marks += mark(CX, CY, 3, TAPE[2]); }
-
-    const title = coverTitle(show.title); let max = 14, lines = wrapLines(title, max);
-    while (lines.length > 4 && max < 24) { max += 2; lines = wrapLines(title, max); }
+  function coverSvg(show, rank) {
+    const seed = hash(show.title), r = rng(seed), c = paletteFor(show, seed), id = "sk" + seed;
+    const body = (SCENES[c.scene] || SCENES.spires)(c, r);
+    const title = coverTitle(show.title); let max = 13, lines = wrapLines(title, max);
+    while (lines.length > 3 && max < 26) { max += 2; lines = wrapLines(title, max); }
     const longest = Math.max(...lines.map((l) => l.length));
-    const fs = Math.max(19, Math.min(34, Math.floor(196 / (longest * 0.47))));
-    const lastY = 292, firstY = lastY - (lines.length - 1) * fs;
-    const text = lines.map((l, n) => `<text class="ct" x="24" y="${(firstY + n * fs).toFixed(1)}" font-size="${fs}" fill="#fff" style="font-family:var(--font-display);font-weight:700;letter-spacing:.02em">${esc(l)}</text>`).join("");
-    const theater = esc(show.theater.toUpperCase());
-    const grid = [60, 90, 120, 150, 180].map((x) => `<path d="M${x} ${Y0}V${Y1}" stroke="hsl(${hue} 22% 30%)" stroke-width=".7"/>`).join("") +
-      [86, 116, 146].map((y) => `<path d="M${X0} ${y}H${X1}" stroke="hsl(${hue} 22% 30%)" stroke-width=".7"/>`).join("");
+    let fs = Math.max(15, Math.min(27, Math.floor(184 / (longest * 0.66))));
+    if (lines.length > 2) fs = Math.min(fs, 17);
+    const lastY = 288, firstY = lastY - (lines.length - 1) * (fs + 1);
+    const text = lines.map((l, n) => `<text class="ct" x="24" y="${(firstY + n * (fs + 1)).toFixed(1)}" font-size="${fs}" fill="#fff" style="font-family:var(--font-display);font-weight:700;letter-spacing:.01em">${esc(l)}</text>`).join("");
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" aria-hidden="true" focusable="false">
-      <rect width="240" height="320" fill="hsl(${hue} 42% 11%)"/>
-      <rect x="12" y="12" width="216" height="296" fill="none" stroke="hsl(${hue} 30% 26%)" stroke-width="1"/>
-      <rect x="14" y="${Y0}" width="16" height="${Y1 - Y0}" fill="hsl(${hue} 40% 8%)"/><rect x="210" y="${Y0}" width="16" height="${Y1 - Y0}" fill="hsl(${hue} 40% 8%)"/>
-      <path d="M${X0} ${Y0}H${X1}V${Y1}Q${CX} ${Y1 + 24} ${X0} ${Y1}Z" fill="hsl(${hue} 30% 17%)" stroke="hsl(${hue} 24% 36%)" stroke-width="1.2"/>
-      ${grid}<path d="M${CX} ${Y0}V${Y1 + 12}" stroke="hsl(${hue} 24% 44%)" stroke-width="1" stroke-dasharray="3 3"/>
-      ${route}${marks}
-      <text x="24" y="38" font-size="11" fill="hsl(${hue} 20% 78%)" style="font-family:var(--font-display);font-weight:600;letter-spacing:.16em">${show.genre === "play" ? "PLAY" : "MUSICAL"}</text>
-      <circle cx="208" cy="32" r="13" fill="#fff"/><text x="208" y="38" text-anchor="middle" font-size="18" fill="#0b1220" style="font-family:var(--font-display);font-weight:700">${rank}</text>
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.s1}"/><stop offset="1" stop-color="${c.s2}"/></linearGradient></defs>
+      <rect width="240" height="320" fill="${c.fg}"/>
+      <svg x="12" y="12" width="216" height="224" viewBox="0 0 ${SW} ${SH}"><rect width="${SW}" height="${SH}" fill="url(#${id})"/><g class="scene">${body}</g></svg>
+      <rect x="12" y="12" width="216" height="296" fill="none" stroke="#e0a01a" stroke-opacity=".75" stroke-width="1.3"/>
+      <circle cx="208" cy="32" r="13" fill="#e0a01a"/><text x="208" y="38" text-anchor="middle" font-size="17" fill="#1c1426" style="font-family:var(--font-display);font-weight:700">${rank}</text>
       ${text}
-      <text x="24" y="308" font-size="9.5" fill="hsl(${hue} 20% 78%)" style="font-family:var(--font-body);font-weight:500;letter-spacing:.1em">${theater}</text>
+      <text x="24" y="305" font-size="9" fill="#e0a01a" style="font-family:var(--font-body);font-weight:600;letter-spacing:.1em">${esc(show.theater.toUpperCase())}</text>
     </svg>`;
   }
   function coverNode(show, rank, card) {
     const wrap = el("div", "cover");
-    const svgNode = () => document.importNode(new DOMParser().parseFromString(coverSvg(show, rank, card), "image/svg+xml").documentElement, true);
+    wrap.style.setProperty("--card", card);
+    const svgNode = () => document.importNode(new DOMParser().parseFromString(coverSvg(show, rank), "image/svg+xml").documentElement, true);
     if (show.cover) {
       const img = document.createElement("img");
       img.alt = ""; img.loading = "lazy"; img.src = show.cover;
@@ -574,7 +706,7 @@ const SHOWS = /*__CATALOG__*/null;
   // ---------------------------------------------------------------- footer and first view
   const checked = new Date(SHOWS[0].last_verified.slice(0, 10) + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   const foot = $("foot");
-  foot.append(document.createTextNode(`Show, theater and runtime checked ${checked} against Broadway Direct's what's-on guide. Prices are typical ranges, not live; ages and content notes are estimates, so confirm on the official seller before you buy. Covers are original diagrams made for this page, not the shows' official artwork. `));
+  foot.append(document.createTextNode(`Show, theater and runtime checked ${checked} against Broadway Direct's what's-on guide. Prices are typical ranges, not live; ages and content notes are estimates, so confirm on the official seller before you buy. Covers are original illustrations made for this page, not the shows' official artwork. `));
   const a = el("a", "", "Broadway Direct"); a.href = "https://broadwaydirect.com/"; a.target = "_blank"; a.rel = "noopener";
   const b = el("a", "", "About this project"); b.href = "https://building-with-ai-f26.github.io/cb5646-broadway-recommender/"; b.target = "_blank"; b.rel = "noopener";
   foot.append(a, document.createTextNode(" sells official tickets. "), b, document.createTextNode("."));
