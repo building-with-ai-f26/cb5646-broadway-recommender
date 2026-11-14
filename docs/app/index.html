@@ -216,7 +216,7 @@ button.line:hover { background: var(--accent-soft); }
 
       <div class="quickstart">
         <span class="label">Quick start</span>
-        <div class="quick" id="quick"><p>Start from an example</p></div>
+        <div class="quick" id="quick" role="group" aria-label="Examples"></div>
         <div class="qs">
           <label class="or" for="text">Or, describe your night</label>
           <textarea id="text" placeholder="Taking my mom for her birthday. She loved Wicked, we want to laugh, and $150 a ticket is our max."></textarea>
@@ -867,7 +867,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
 
-  // who, mood and budget start unset (undefined) because they are required; budget null means "any price".
+  // who, mood, type and budget start unset (undefined) because they are required; budget null means "any price".
   // `auto` lists answers filled in from the description; `autoRules` the rule-outs filled in that way.
   const fresh = () => ({ who: undefined, mood: undefined, type: undefined, budget: undefined, age: null, first: "", rules: [], text: "", auto: new Set(), autoRules: [] });
   // Each example is a description; picking one fills the text box and the questions are read from it.
