@@ -232,7 +232,7 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
         </div>
         <div class="stat-box">
           <div class="stat-label">User Evidence (Analytics from Build 2)</div>
-          <div class="stat-value">None yet. PostHog is not installed.</div>
+          <div class="stat-value">PostHog installed Nov 13 and confirmed receiving events. So far the only traffic is my own test run (1 visitor: 2 pageviews, 6 answers, 2 sets of picks), which says nothing about real users. No outside users yet.</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Sponsor Call (Week 6)</div>
@@ -259,8 +259,8 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
       <div class="log-entry">
         <h3>Build 2 · Smallest Local Version & PostHog (Due Nov 16)</h3>
         <ul>
-          <li><strong>What shipped (as of Nov 13):</strong> The catalog grew from 8 to 34 shows running or opening now, checked against Broadway Direct's what's-on guide. A browser version of the recommender (<a href="app/">app/</a>) that applies the same hard rules and can optionally ask Claude to pick. 27 offline checks in <code>web/test_core.js</code> plus the existing Python tests, all passing. Real run and test commands in <code>AGENTS.md</code>. Merged in pull request #1.<br />
-          <strong>Still open before Nov 16:</strong> run the Streamlit app with my own API key and screenshot the picks, install PostHog, and write PRD v2.</li>
+          <li><strong>What shipped (as of Nov 13):</strong> The catalog grew from 8 to 34 shows running or opening now, checked against Broadway Direct's what's-on guide. A browser version of the recommender (<a href="app/">app/</a>) that applies the same hard rules and ranks the picks in the browser, with no API key needed. 27 offline checks in <code>web/test_core.js</code> plus the existing Python tests, all passing. Real run and test commands in <code>AGENTS.md</code>. Merged in pull request #1.<br />
+          <strong>Still open before Nov 16:</strong> run the Streamlit app with my own API key and screenshot the picks, and write PRD v2. PostHog is installed on this page, the web app and the Streamlit app (merged Nov 13); the first events arrived from my own test run.</li>
           <li><strong>What broke / changed in PRD:</strong>
             <ul>
               <li>The riskiest assumption was real. The old catalog covered 8 of the 34 shows now listed, and some shows are closing soon (Maybe Happy Ending tickets are on sale only through Nov 22; School Girls is listed as leaving this month). Entries now carry a note field for closing dates, and ages, content notes and most prices are labeled as estimates on the page.</li>
