@@ -162,7 +162,7 @@
     <header>
       <span class="eyebrow">NYU Stern · Building with AI · Fall 2026</span>
       <h1>Broadway Concierge</h1>
-      <p class="tagline">Broadway Concierge helps first-time and budget-conscious theatergoers pick the right show for their group and spot ticket scams before they pay.</p>
+      <p class="tagline">Broadway Concierge helps new and experienced theatergoers find the right show for their group, matched to their taste, budget and schedule, and flags ticket scams before they pay.</p>
       <div class="cta-row">
         <a class="btn" href="#live-demo" onclick="window.posthog && posthog.capture('clicked_try_product')">See the Product →</a>
         <a class="btn btn-secondary" href="#prd">Read the Living PRD</a>
@@ -174,13 +174,13 @@
     <section id="live-demo">
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
-        <strong>Current Status:</strong> Build 2 in progress: local Streamlit prototype plus a browser version<br />
+        <strong>Current Status:</strong> Build 2 shipped (Nov 14): a live web app anyone can use with no account or API key, plus the local Streamlit app that uses Claude. PostHog is installed on both and on this page.<br />
         <strong>Demo:</strong> Screenshot of the current web version after choosing the "Date night, $150 max" example. The four required questions (who, mood, musical or play, price) are filled in from the description and marked "From your description"; the result is three picks with a cover, status, price, runtime, ages, why it fits and a heads-up.<br />
-        <strong>Try it:</strong> <a href="app/">web version of the show recommender</a> (34 shows running as of Nov 13, 2026).
+        <strong>Try it:</strong> <a href="app/">web version of the show recommender</a> (34 shows running or opening as of Nov 13, 2026). Pick an example or describe your night, check the four answers it fills in, and the picks update as you go.
       </p>
       <img src="app-screenshot.png" alt="Broadway Concierge web version on Nov 14: the Date night example fills in date night, cry, musical and under $150 from its description, with three picks: Maybe Happy Ending, The Great Gatsby and The Outsiders" style="max-width:100%; border:1px solid #e5e7eb; border-radius:8px;" />
       <p class="meta">
-        This screenshot is the browser version using the built-in matcher, with no API key. Next: run the Streamlit app with my own API key and add a screenshot of the picks it returns.
+        This screenshot is the web version, which ranks shows with built-in rules in the browser and needs no API key. Still to add: a screenshot of the local Streamlit app returning picks from Claude with my own API key.
       </p>
     </section>
 
@@ -197,7 +197,7 @@
 Buying tickets: Official sellers are safe but can be pricey or sold out. So budget buyers turn to Facebook groups and forums, where nothing is verified. They check listings by instinct (seller profile, screenshots, “does this row exist?”), and scammers push payment methods with no protection, like Zelle, gift cards, and crypto. Once the money is sent, it’s gone.
 
 The gap: Recommendations ignore ticket-buying reality, and resale groups give no help judging a listing.</p>
-      <p><strong>The "After" workflow with this product:</strong> Describe the night. The user types something like “Taking my mom, we loved Wicked, hate jukebox musicals, $150 max.”
+      <p><strong>The "After" workflow with this product:</strong> Describe the night. The user types something like “Taking my mom, we loved Wicked, hate jukebox musicals, $150 max,” or taps an example, and checks the answers it fills in (here: Family, Laugh, $150, no jukebox).
 Get 3 picks. The tool returns three shows from the catalog, each with why it fits, one honest caution, and a typical price range.
 Find tickets. The user picks a show and checks official sources or resale groups.
 Paste any resale listing. If they find a cheap one, they paste it into the checker.
@@ -206,19 +206,20 @@ Decide. They buy with confidence, walk away from the scam, or switch to an offic
 
       <h3>2. Scope & Explicit Non-Goals</h3>
       <ul>
-        <li><strong>In Scope (Core Workflow):</strong> In scope (the one workflow): describe your night (group, mood, budget) and get 3 shows that fit, with why each fits, one honest caution, and a typical price range.
+        <li><strong>In Scope (Core Workflow):</strong> Describe your night, or start from an example, and get 3 shows that fit. Four answers are required: who is going (solo, date, friends, family of adults, or taking kids with the youngest age), mood, musical or play, and the most you will pay per ticket. The app fills these in from the description, and the person can change any of them. Optional: first time on Broadway, and rule-outs (no jukebox musicals, no crude or sexual content, no adult themes, under 2h15, not too loud, no intermission). Each pick shows why it fits, one honest caution, the theater, runtime, ages and a typical price range.
 
-The tool picks only from a hand-built catalog of currently running shows. It respects stated limits like budget, age, and dislikes (for example “hate jukebox musicals”).
+The tool picks only from a hand-built catalog of shows that are running or about to open. Hard limits (price, kids' age, show type, rule-outs) are applied in code before anything is ranked, so a pick can never break them; if fewer than three shows fit, the closest near-misses are labeled with what they break.
 
-Secondary feature: paste a resale listing and get a low, medium, or high risk rating with the specific red flags. This is the “before you pay” safety check once they’ve picked a show.</li>
-        <li><strong>Out of Scope #1:</strong> Live prices or inventory buying tickets or messaging sellers</li>
+Secondary feature (built in the command-line prototype, not yet in the web app): paste a resale listing and get a low, medium, or high risk rating with the specific red flags. This is the "before you pay" safety check once they've picked a show.</li>
+        <li><strong>Out of Scope #1:</strong> Live prices or seat inventory (prices are typical ranges and are labeled that way)</li>
         <li><strong>Out of Scope #2:</strong> Scraping Facebook or forums</li>
         <li><strong>Out of Scope #3:</strong> Buying tickets or messaging sellers</li>
       </ul>
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
       <p><strong>Riskiest Assumption:</strong> Broadway Concierge takes a user’s request, loads a hand-built catalog of running shows, and sends both to the Claude API, which picks three fits with a reason, a caution, and a typical price. The same pattern powers the secondary resale checker, which compares a pasted listing against a red-flag checklist and theater seating info. There’s no database and no live data, so the riskiest assumption is that the catalog is accurate and current enough to trust. Closed shows, stale prices, or wrong content warnings would sink user confidence, so verify every show and test with a few sample requests.</p>
-      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, musical or play, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages, show type or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>. There, the person can start from an example or describe the night in words, and the four required questions are filled in from that text; anything they pick themselves is never overwritten.</p>
+      <p><strong>What Week 2 showed:</strong> The risk was real. The Build 1 catalog, written from memory, covered only 8 of the 34 shows now on Broadway, and several current shows close within weeks. The catalog was rebuilt on Nov 13 against Broadway Direct's what's-on guide, with a date on every entry and closing notes where known. Ages, content notes and the high end of each price range are still my estimates and are labeled as estimates on every card. Keeping the catalog current is now a weekly task, not a one-time setup.</p>
+      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, musical or play, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages, show type or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>. There, the person can start from an example or describe the night in words, and the four required questions are filled in from that text; anything they pick themselves is never overwritten. The Streamlit app reads descriptions with the same rules. Both apps send anonymous usage events to PostHog: answers chosen, picks shown and buttons used, never the text a person types.</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
@@ -232,7 +233,7 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
         </div>
         <div class="stat-box">
           <div class="stat-label">User Evidence (Analytics from Build 2)</div>
-          <div class="stat-value">PostHog installed Nov 13 and confirmed receiving events. So far the only traffic is my own test run (1 visitor: 2 pageviews, 6 answers, 2 sets of picks), which says nothing about real users. No outside users yet.</div>
+          <div class="stat-value">PostHog installed Nov 13 on this page, the web app and the Streamlit app, and confirmed receiving events from the live pages. Through Nov 14 every event comes from one visitor, me, testing: 24 pageviews, 23 answers, 15 sets of picks, 2 forms filled from a description, 1 "different picks" click. No events from the Streamlit app yet (it has not been run with the PostHog token). No outside users yet, so there is no user evidence to report.</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Sponsor Call (Week 6)</div>
@@ -259,21 +260,32 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
       <div class="log-entry">
         <h3>Build 2 · Smallest Local Version & PostHog (Due Nov 16)</h3>
         <ul>
-          <li><strong>What shipped (as of Nov 13):</strong> The catalog grew from 8 to 34 shows running or opening now, checked against Broadway Direct's what's-on guide. A browser version of the recommender (<a href="app/">app/</a>) that applies the same hard rules and ranks the picks in the browser, with no API key needed. 27 offline checks in <code>web/test_core.js</code> plus the existing Python tests, all passing. Real run and test commands in <code>AGENTS.md</code>. Merged in pull request #1.<br />
-          <strong>Nov 14 update to the web app:</strong> Quick start now leads with four examples, then "Or, describe your night." Each example is a written description, and the app reads any description to fill in who is going, mood, musical or play, price, kids' ages and some rule-outs, labeled "From your description" so the person can check and change them. New required question: Musical, Play or Either. New rule-out: "No adult themes" (death, violence, abuse or war; the old "Nothing adult" option is now "No crude or sexual content"). "Under 2h45" became "Under 2h15", which rules out 20 of 34 shows instead of 3. The Streamlit app got the same three rule changes. 34 offline checks in <code>web/test_core.js</code>, all passing.<br />
-          <strong>Still open before Nov 16:</strong> run the Streamlit app with my own API key and screenshot the picks, and write PRD v2. PostHog is installed on this page, the web app and the Streamlit app (merged Nov 13); the first events arrived from my own test run.</li>
-          <li><strong>What broke / changed in PRD:</strong>
+          <li><strong>What shipped (Nov 13 and Nov 14, pull requests #1 to #11):</strong>
             <ul>
-              <li>The riskiest assumption was real. The old catalog covered 8 of the 34 shows now listed, and some shows are closing soon (Maybe Happy Ending tickets are on sale only through Nov 22; School Girls is listed as leaving this month). Entries now carry a note field for closing dates, and ages, content notes and most prices are labeled as estimates on the page.</li>
-              <li>The text reader treated "I hate jukebox musicals, and we want to laugh" as a dislike of comedy, because the word "hate" reached across the comma. Found by running the example request in a browser; fixed by ending the dislike at a comma or "but", with a test.</li>
-              <li>A family night with no kids' ages entered could return a show meant for ages 13 and up. Now the ranker leans toward school-age shows when kids are coming and no age is set, and says so under the picks. As of Nov 14, "Who is going?" separates <em>Family</em> (adults only, 18+, no age limit) from <em>Taking kids</em> (asks for the youngest age, which applies a hard age limit).</li>
-              <li>Named the target user: Anne, a knowledgeable regular theatergoer, in place of the broader "first-timer who doesn't know the shows" description. The pitch and before/after workflow below still describe first-timers and are next to align. Anne also wants taste memory, schedule and deal alerts, which the product does not do yet; closing-date notes are the only part built.</li>
-              <li>Reading the description is plain keyword matching, not AI, so it can miss or misread phrasing ("my mom" counts as Family and "the kids" as Taking kids; "a musical or a play" means Either). It only fills what the text clearly says and leaves the rest required, and the labels show what was guessed.</li>
-              <li>"No adult themes" is decided from the catalog's content notes, which are editorial estimates. It rules out 18 of 34 shows, including The Lion King (a parent's death), so it is strict on purpose.</li>
-              <li>The test suite used Hamilton as its made-up show, which stopped working once Hamilton was a real entry in the catalog.</li>
-              <li>Cost per request went up about 2.3 times, from roughly $0.009 to $0.02, because the Python app sends every eligible show to Claude. The browser version sends only the top 10.</li>
+              <li><strong>Catalog:</strong> grew from 8 shows written from memory to 34 shows running or opening now, checked against Broadway Direct's what's-on guide on Nov 13, with closing notes (for example, Maybe Happy Ending tickets on sale only through Nov 22).</li>
+              <li><strong>Live web app</strong> at <a href="app/">app/</a>: the same hard rules as the Python app, running in the browser with no API key. A red and gold theatre-marquee design, an original cover illustration for every show, and live picks that update as answers change.</li>
+              <li><strong>Form:</strong> four required answers (who is going, mood, musical or play, price per ticket with preset limits or an exact slider), optional first-timer and rule-outs. "Who is going?" separates Family (adults only) from Taking kids (asks for the youngest age, which becomes a hard age limit).</li>
+              <li><strong>Quick start:</strong> four examples, or "Or, describe your night." The app reads the text and fills in the answers it can, marked "From your description." Anything chosen by hand is never overwritten. The Streamlit app does the same.</li>
+              <li><strong>Results:</strong> three picks with why each fits, a heads-up, theater, runtime, ages and typical price; a count of how many shows fit and what was ruled out; "Show me different picks," "Copy my picks" and "Start over."</li>
+              <li><strong>PostHog:</strong> installed on this page, the web app and the Streamlit app, and verified in PostHog on Nov 13 (see the analytics box above).</li>
+              <li><strong>Tests:</strong> 36 offline checks for the web logic (<code>node web/test_core.js</code>) and 8 for the Python app (<code>python test_recommender.py</code>), all passing. 18 sample descriptions are shared by both, so the web and Python versions read text the same way. Run and test commands are in <code>AGENTS.md</code> and the README.</li>
             </ul>
           </li>
+          <li><strong>Things learned with AI:</strong> Working in pull requests: each change goes on its own branch, gets reviewed as one pull request, and is merged when it is right, which made 11 changes in two days easy to follow and undo. GitHub Pages republishes the site a minute or two after a merge (Ctrl+F5 loads the new version). A PostHog project token is meant to be public, but a personal API key must never be in code; real keys stay in a local <code>.env</code> file that git ignores. Running a Python app on Windows needs a virtual environment and a few PowerShell commands, now written up in the README.</li>
+          <li><strong>What broke / changed in PRD:</strong>
+            <ul>
+              <li>The riskiest assumption was real: the old catalog covered 8 of 34 current shows, and some shows close within weeks. Entries now carry a check date and closing notes, and ages, content notes and most prices are labeled as estimates on the page.</li>
+              <li>The text reader treated "I hate jukebox musicals, and we want to laugh" as a dislike of comedy, because "hate" reached across the comma. Found by running the example request in a browser; fixed by ending a dislike at a comma or "but", with a test.</li>
+              <li>A night out with kids and no ages entered could return a show meant for ages 13 and up. Now picks lean toward school-age shows and say so, and setting the youngest age applies a hard limit. On Nov 14 "Family" became adults only, and "Taking kids" became its own answer.</li>
+              <li>Filling the form from a description first missed ordinary wording ("budget 200", "my sister", "something sad", "2 kids (8 and 12)"), and the Streamlit app did not fill anything. Both now share one set of patterns and 18 test descriptions. It is still keyword matching, not AI: wording it does not know stays blank and stays required.</li>
+              <li>Feedback from testing the form changed it: a fourth required question (Musical, Play or Either), a "No adult themes" rule-out, "Under 2h45" tightened to "Under 2h15" (rules out 20 of 34 shows instead of 3), and "Been to Broadway before?" allows both answers for a mixed group.</li>
+              <li>"No adult themes" is judged from the catalog's content notes, which are my estimates. It rules out 18 of 34 shows, including The Lion King (a parent's death), so it is strict on purpose.</li>
+              <li>PostHog's bot filter dropped events sent from automated browser tests, so analytics could only be confirmed by a real visit to the live pages.</li>
+              <li>Named the target user: Anne, a knowledgeable regular theatergoer. The pitch now matches. Anne also wants taste memory, schedule and deal alerts, which the product does not do yet; closing-date notes are the only part built.</li>
+              <li>Cost per Claude request in the Python app went up about 2.3 times, from roughly $0.009 to $0.02, because it sends every eligible show to Claude. The web app needs no API calls.</li>
+            </ul>
+          </li>
+          <li><strong>Still open:</strong> run the Streamlit app with my own Claude API key, screenshot the picks it returns and confirm its PostHog events; confirm Anne can test the app and how to reach her; the resale-listing checker is not in the web app yet.</li>
           <li><strong>Cost & time this week:</strong> $0 incremental · 4 hours. Build 2 used the same Claude subscription already counted in Build 1 ($21.78). No Claude API runtime yet (the web app needs no key and the Streamlit app has not been run with my key), PostHog free tier, GitHub Pages free. Running the Streamlit app with my API key will add about $0.02 per request.</li>
         </ul>
       </div>
