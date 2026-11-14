@@ -325,12 +325,22 @@
     return message;
   }
 
-  /** Built-in recommendation (no AI). Returns {picks, assumptions, message, source}. */
-  function recommendLocal(shows, input) {
+  /**
+   * Built-in recommendation (no AI). Returns {picks, assumptions, message, source, eligibleCount, offset}.
+   * opts.offset skips down the ranking for "show me different picks" (wraps around the eligible list).
+   * Each pick carries `rank`, its place in the full ranking.
+   */
+  function recommendLocal(shows, input, opts) {
     const { limits, ctx, eligible, ranked, want } = prepare(shows, input);
-    const picks = ranked.slice(0, want).map((r) => makePick(r.show, whyText(r.show, r.reasons), cautionText(r.show), true));
+    const wanted = (opts && opts.offset) || 0;
+    const start = eligible.length > want && wanted > 0 ? wanted % eligible.length : 0;
+    let slice = ranked.map((r, i) => ({ ...r, rank: i + 1 })).slice(start, start + want);
+    if (slice.length < want && eligible.length > want)
+      slice = slice.concat(ranked.slice(0, want - slice.length).map((r, i) => ({ ...r, rank: i + 1 })));
+    const picks = slice.map((r) => ({ ...makePick(r.show, whyText(r.show, r.reasons), cautionText(r.show), true), rank: r.rank }));
     const message = addNearMisses(picks, shows, limits, eligible.length);
-    return { picks, assumptions: assumptionsFor(input, ctx), message, source: "built-in" };
+    picks.forEach((p, i) => { if (!p.rank) p.rank = i + 1; });
+    return { picks, assumptions: assumptionsFor(input, ctx), message, source: "built-in", eligibleCount: eligible.length, offset: start };
   }
 
   // ------------------------------------------------------------ optional Claude step
@@ -405,8 +415,9 @@
     for (const p of picks) if (!p.why_it_fits) p.why_it_fits = "Good for: " + (byTitle[p.title].good_for || []).join(", ") + ".";
     for (const p of picks) if (!p.caution) p.caution = cautionText(byTitle[p.title]);
     const message = addNearMisses(picks, shows, prepared.limits, prepared.eligible.length);
+    picks.forEach((p, i) => { p.rank = i + 1; });
     const assumptions = String((data && data.assumptions) || "").trim() || assumptionsFor(input, prepared.ctx);
-    return { picks, assumptions, message, source: "claude" };
+    return { picks, assumptions, message, source: "claude", eligibleCount: prepared.eligible.length, offset: 0 };
   }
 
   return {

@@ -142,6 +142,26 @@ const sloppyAi = async () =>
     assert.ok(!prompt.includes('"title": "Hamilton"'));
     assert.ok(prompt.includes("<user_request>\nhi\n</user_request>"));
   });
+  check("different picks: offset 3 gives three new titles; picks carry their rank", () => {
+    const inp = { ...base, who: "friends", mood: "laugh", maxPrice: 250 };
+    const a = R.recommendLocal(SHOWS, inp), b = R.recommendLocal(SHOWS, inp, { offset: 3 });
+    assert.ok(a.eligibleCount > 6);
+    assert.ok(!a.picks.some((p) => b.picks.map((q) => q.title).includes(p.title)));
+    assert.deepStrictEqual(a.picks.map((p) => p.rank), [1, 2, 3]);
+    assert.deepStrictEqual(b.picks.map((p) => p.rank), [4, 5, 6]);
+    assert.ok(b.picks.every((p) => p.fits_all_limits));
+  });
+  check("different picks: offset wraps around the end and never repeats within one set", () => {
+    const inp = { ...base, maxPrice: 250 };
+    const n = R.recommendLocal(SHOWS, inp).eligibleCount;
+    const w = R.recommendLocal(SHOWS, inp, { offset: n - 1 });
+    assert.strictEqual(new Set(w.picks.map((p) => p.title)).size, 3);
+  });
+  check("different picks: ignored when 3 or fewer shows fit", () => {
+    const inp = { ...base, who: "family", kidsAges: "4", text: "kids" };
+    const a = R.recommendLocal(SHOWS, inp), b = R.recommendLocal(SHOWS, inp, { offset: 3 });
+    assert.deepStrictEqual(a.picks.map((p) => p.title), b.picks.map((p) => p.title));
+  });
   check("catalog sanity: 34 shows, unique titles, price_low <= price_high", () => {
     assert.strictEqual(SHOWS.length, 34);
     assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 34);

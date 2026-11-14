@@ -6,187 +6,252 @@
 <title>Broadway Concierge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* Layout idea: a playbill. Marquee-bulb header, a form on the left, ticket-stub results on the right. */
+/* World: the stage manager's backstage paperwork. Condensed signage type, work-light blue, cue-light green/amber/red
+   for status, and a spike-tape blocking diagram on every cover. Layout: a brief on the left, picks on the right. */
 :root {
-  --bg: #f3eff7; --surface: #ffffff; --ink: #1c1426; --muted: #665b73; --line: #d8cfe3;
-  --accent: #a3112c; --accent-ink: #ffffff; --soft: #ece6f3; --bulb: #e0a01a;
-  --good: #1b6b44; --warn: #8a4b00;
-  --font-display: "Bodoni Moda", Didot, "Bodoni 72", Georgia, serif;
-  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ground: #eceff4; --surface: #ffffff; --tint: #f5f7fb; --ink: #0e1726; --muted: #475268; --line: #c9d1de;
+  --accent: #1a4bd0; --accent-ink: #ffffff; --accent-soft: #e2e9ff;
+  --go: #0b7436; --standby: #855200; --stop: #b0251d;
+  --go-soft: #dff3e6; --standby-soft: #fbefd4; --stop-soft: #fbe3e0;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.16, 1, .3, 1);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #140e1a; --surface: #1f1628; --ink: #f4eef9; --muted: #aa9db8; --line: #3b2d49;
-    --accent: #ff5470; --accent-ink: #1c0a10; --soft: #2a1f36; --bulb: #ffc04d;
-    --good: #5fd39a; --warn: #ffb35c; color-scheme: dark;
+    --ground: #090f1b; --surface: #111a2b; --tint: #0d1525; --ink: #e8eefa; --muted: #a2b2cb; --line: #26344d;
+    --accent: #7ea4ff; --accent-ink: #07122c; --accent-soft: #19284d;
+    --go: #55e393; --standby: #ffc552; --stop: #ff8178;
+    --go-soft: #12301f; --standby-soft: #33260b; --stop-soft: #3a1714; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #140e1a; --surface: #1f1628; --ink: #f4eef9; --muted: #aa9db8; --line: #3b2d49;
-  --accent: #ff5470; --accent-ink: #1c0a10; --soft: #2a1f36; --bulb: #ffc04d;
-  --good: #5fd39a; --warn: #ffb35c; color-scheme: dark;
+  --ground: #090f1b; --surface: #111a2b; --tint: #0d1525; --ink: #e8eefa; --muted: #a2b2cb; --line: #26344d;
+  --accent: #7ea4ff; --accent-ink: #07122c; --accent-soft: #19284d;
+  --go: #55e393; --standby: #ffc552; --stop: #ff8178;
+  --go-soft: #12301f; --standby-soft: #33260b; --stop-soft: #3a1714; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
+html { scrollbar-color: var(--line) var(--ground); }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--font-body); -webkit-text-size-adjust: 100%; }
-h1, h2, h3 { text-wrap: balance; margin: 0; }
+body { background: var(--ground); color: var(--ink); font: 400 17px/1.5 var(--font-body); -webkit-text-size-adjust: 100%; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+h1, h2, h3, p, dl, dd { margin: 0; }
+h1, h2, h3 { text-wrap: balance; font-family: var(--font-display); font-weight: 700; letter-spacing: .005em; }
 button, input, select, textarea { font: inherit; color: inherit; }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+textarea { caret-color: var(--accent); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+[hidden] { display: none !important; }
 
-.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 48px; }
+.shell { max-width: 1180px; margin: 0 auto; padding: 0 20px 88px; }
 
-/* Header marquee */
-.marquee { position: relative; padding: 34px 0 30px; text-align: center; }
-.marquee::before, .marquee::after {
-  content: ""; position: absolute; left: 0; right: 0; height: 12px;
-  background: radial-gradient(circle, var(--bulb) 0 3.5px, transparent 4.5px) 0 50% / 22px 12px repeat-x;
-}
-.marquee::before { top: 8px; }
-.marquee::after { bottom: 0; animation: chase 1.6s steps(1) infinite; }
-.marquee .bulbs-alt { position: absolute; left: 0; right: 0; top: 8px; height: 12px;
-  background: radial-gradient(circle, var(--bulb) 0 3.5px, transparent 4.5px) 11px 50% / 22px 12px repeat-x; opacity: .45; }
-@keyframes chase { 50% { opacity: .45; } }
-.marquee h1 { font: 700 clamp(2.4rem, 7vw, 4.4rem)/1 var(--font-display); letter-spacing: -.01em; }
-.marquee h1 em { font-style: italic; font-weight: 500; color: var(--accent); }
-.marquee p { margin: 12px auto 0; max-width: 46ch; color: var(--muted); font-size: 1.05rem; }
+/* Top bar */
+.bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; padding: 22px 0 18px; border-bottom: 1px solid var(--line); }
+.bar h1 { font-size: clamp(1.6rem, 4vw + .3rem, 2.4rem); text-transform: uppercase; letter-spacing: .03em; line-height: 1; overflow-wrap: anywhere; }
+.bar p { color: var(--muted); }
 
-/* Two-column app */
-.app { display: grid; grid-template-columns: minmax(0, 390px) minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 26px; }
-@media (max-width: 860px) { .app { grid-template-columns: 1fr; } }
+.app { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 36px; align-items: start; padding-top: 28px; }
+@media (max-width: 900px) { .app { grid-template-columns: 1fr; gap: 28px; } }
 
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
-.panel h2 { font: 700 1.35rem/1.2 var(--font-display); margin-bottom: 4px; }
-.hint { color: var(--muted); font-size: .9rem; margin: 0 0 14px; }
+/* Brief (inputs) */
+.brief { display: grid; gap: 26px; }
+.brief h2, .results-head h2 { font-size: 1.9rem; text-transform: uppercase; letter-spacing: .03em; line-height: 1.05; }
+.head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.linkbtn { background: none; border: 0; padding: 10px 4px; color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: .18em; text-decoration-thickness: 1px; min-height: 44px; }
 
-label.field, .legend { display: block; font-weight: 600; font-size: .92rem; margin: 18px 0 6px; }
-textarea { width: 100%; min-height: 104px; resize: vertical; padding: 10px 12px; border: 1px solid var(--line);
-  border-radius: 10px; background: var(--bg); line-height: 1.45; }
-input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
-fieldset { border: 0; padding: 0; margin: 18px 0 0; min-width: 0; }
-fieldset > .legend { margin: 0 0 6px; padding: 0; }
+.quick { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick p { width: 100%; color: var(--muted); font-size: .92rem; }
+.quick button { min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; font-weight: 500; font-size: .95rem; }
+.quick button:hover { border-color: var(--accent); }
 
-.choices { display: flex; flex-wrap: wrap; gap: 8px; }
-.choice { position: relative; }
-.choice input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-.choice span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--line);
-  border-radius: 999px; background: var(--bg); font-size: .92rem; transition: background .15s, border-color .15s; }
-.choice input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.choice input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
-.choice.box span { border-radius: 10px; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend, .label { display: block; padding: 0; margin-bottom: 10px; font: 700 1.12rem/1.2 var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+.hint { color: var(--muted); font-size: .9rem; margin-top: 8px; }
 
-.budget { display: flex; align-items: center; gap: 12px; }
-.budget input[type="range"] { flex: 1; accent-color: var(--accent); min-width: 0; }
-.budget output { min-width: 4.2ch; font-weight: 700; font-variant-numeric: tabular-nums; }
-.check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .92rem; }
-.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+/* radio and checkbox controls */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.opt { position: relative; }
+.opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.face { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 8px 12px; text-align: center;
+  border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); font-weight: 500; line-height: 1.2; transition: background .12s, border-color .12s, color .12s; }
+.tile .face { flex-direction: column; min-height: 76px; gap: 6px; font-weight: 600; }
+.face svg { width: 26px; height: 26px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.opt:hover .face { border-color: var(--accent); }
+.opt input:checked + .face { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.opt input:focus-visible + .face { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
 
-button.go { margin-top: 22px; width: 100%; min-height: 48px; border: 0; border-radius: 12px; cursor: pointer;
-  background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 1.02rem; }
-button.go:disabled { opacity: .6; cursor: progress; }
-.ai-row { margin-top: 16px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; }
-.ai-row small { display: block; color: var(--muted); margin-top: 2px; }
+.stepper { display: inline-flex; align-items: center; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.stepper button { width: 48px; height: 48px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; }
+.stepper button:hover { background: var(--accent-soft); }
+.stepper svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; }
+.stepper output { min-width: 5.5em; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+textarea { width: 100%; min-height: 96px; resize: vertical; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); line-height: 1.45; }
+textarea::placeholder { color: var(--muted); opacity: .85; }
+
+.claude-row { display: grid; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--tint); }
+button.solid { min-height: 48px; padding: 0 18px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; }
+button.solid:disabled { opacity: .6; cursor: progress; }
+button.line { min-height: 48px; padding: 0 16px; border: 1.5px solid var(--accent); border-radius: 10px; background: transparent; color: var(--accent); font-weight: 700; cursor: pointer; }
+button.line:hover { background: var(--accent-soft); }
 
 /* Results */
-.results-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 14px; }
-.results-head h2 { font: 700 1.6rem/1.15 var(--font-display); }
-.source { font-size: .85rem; color: var(--muted); }
-.notice { background: var(--soft); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: .92rem; }
-.notice.warn { border-left: 4px solid var(--warn); }
+.results { display: grid; gap: 18px; min-width: 0; }
+.results-head { display: grid; gap: 8px; }
+.scope { color: var(--muted); }
+.scope b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.ruled { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .92rem; }
+.lamp { display: inline-block; width: 12px; height: 12px; flex: none; border-radius: 50%; background: currentColor; box-shadow: inset 0 0 0 2px var(--surface), 0 0 0 1.5px currentColor; }
+.lamp.go { color: var(--go); } .lamp.standby { color: var(--standby); } .lamp.stop { color: var(--stop); }
 
-.stub { position: relative; display: grid; grid-template-columns: 74px minmax(0, 1fr); background: var(--surface);
-  border: 1px solid var(--line); border-radius: 14px; margin-bottom: 16px; overflow: hidden; }
-.stub .num { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 12px 6px;
-  border-right: 2px dashed var(--line); background: var(--soft); }
-.stub .num b { font: 700 2.6rem/1 var(--font-display); color: var(--accent); }
-.stub .num small { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
-.stub .body { padding: 16px 18px 16px; min-width: 0; }
-.stub h3 { font: 700 1.5rem/1.15 var(--font-display); }
-.stub .where { color: var(--muted); font-size: .92rem; margin: 2px 0 10px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.chip { font-size: .8rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--soft); border: 1px solid var(--line); }
-.chip.rush { color: var(--good); border-color: var(--good); background: transparent; }
-.chip.soon { color: var(--warn); border-color: var(--warn); background: transparent; }
-.chip.near { color: var(--warn); border-color: var(--warn); background: transparent; }
-.stub p { margin: 0 0 8px; }
-.stub .k { font-weight: 700; }
-.stub .fine { color: var(--muted); font-size: .84rem; margin-top: 10px; }
-.stub.near { border-color: var(--warn); }
-@media (max-width: 480px) { .stub { grid-template-columns: 52px minmax(0, 1fr); } .stub .num b { font-size: 2rem; } }
+#picks { display: grid; gap: 18px; }
+#notices { display: grid; gap: 8px; }
+.notice { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--tint); font-size: .95rem; }
+.notice.warn { background: var(--standby-soft); border-color: var(--standby); }
 
-.foot { margin-top: 10px; color: var(--muted); font-size: .85rem; max-width: 70ch; }
-.foot a { color: inherit; }
-.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -2px; margin-right: 8px; animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .marquee::after, .spin { animation: none; } .choice span { transition: none; } }
-[hidden] { display: none !important; }
+.show { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 22px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 1px 2px rgba(10, 20, 40, .06), 0 8px 24px rgba(10, 20, 40, .07); }
+.cover { display: block; width: 100%; aspect-ratio: 3 / 4; border-radius: 0; overflow: hidden; background: #0b1220; }
+.cover svg, .cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.info { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.info h3 { font-size: clamp(1.7rem, 2.4vw + 1rem, 2.3rem); line-height: 1.02; text-transform: uppercase; letter-spacing: .015em; overflow-wrap: anywhere; }
+.meta { color: var(--muted); }
+.status { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 4px 12px 4px 10px; border-radius: 999px; font-weight: 700; font-size: .92rem; border: 1px solid currentColor; }
+.status.go { color: var(--go); background: var(--go-soft); } .status.standby { color: var(--standby); background: var(--standby-soft); }
+.rows { display: grid; gap: 8px; }
+.rows > div { display: grid; grid-template-columns: 7.2em minmax(0, 1fr); gap: 12px; }
+.rows dt { color: var(--muted); font-weight: 600; }
+.rows dd { min-width: 0; }
+.rows dd, .fine, .meta, .notice, .hint, .foot { text-wrap: pretty; }
+.price { font-variant-numeric: tabular-nums; font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--tint); font-size: .88rem; font-weight: 500; }
+.chip.rush { color: var(--go); border-color: var(--go); background: var(--go-soft); font-weight: 600; }
+.chip.soon { color: var(--standby); border-color: var(--standby); background: var(--standby-soft); font-weight: 600; }
+.fine { color: var(--muted); font-size: .86rem; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.copybox { display: grid; gap: 6px; }
+.copybox textarea { min-height: 120px; font-size: .92rem; }
+.foot { color: var(--muted); font-size: .88rem; max-width: 62ch; }
+
+/* One authored moment: spike marks go down one at a time when picks appear. */
+@keyframes spike { from { opacity: 0; transform: scale(1.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.cover .mark { transform-box: fill-box; transform-origin: center; animation: spike .5s var(--ease) backwards; animation-delay: calc(var(--i) * 70ms + var(--card) * 160ms); }
+.cover .route { animation: fade .6s ease-out backwards; animation-delay: calc(var(--card) * 160ms + 200ms); }
+
+/* phone: cover shrinks beside the text */
+@media (max-width: 600px) {
+  .show { grid-template-columns: 104px minmax(0, 1fr); gap: 10px 14px; padding: 12px; align-items: start; }
+  .info { display: contents; }
+  .cover { grid-column: 1; grid-row: 1 / span 3; }
+  .info > h3, .info > .meta, .info > .status { grid-column: 2; }
+  .info > .rows, .info > .chips, .info > .fine { grid-column: 1 / -1; }
+  .rows > div { grid-template-columns: 1fr; gap: 0; }
+  .info h3 { font-size: 1.55rem; }
+}
+.jump { position: fixed; left: 16px; right: 16px; bottom: 14px; z-index: 5; display: none; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; box-shadow: 0 6px 18px rgba(5, 10, 25, .35); }
+.jump svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 900px) { .jump.on { display: flex; } }
+@media (prefers-reduced-motion: reduce) {
+  .cover .mark, .cover .route { animation: none; }
+  .face { transition: none; }
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="marquee">
-    <span class="bulbs-alt" aria-hidden="true"></span>
-    <h1>Broadway <em>Concierge</em></h1>
-    <p>Tell us about your night. Get three Broadway shows that fit your group, your mood and your budget.</p>
+<div class="shell">
+  <header class="bar">
+    <h1>Broadway Concierge</h1>
+    <p>Three shows for your night. Tap what fits and the picks update as you go.</p>
   </header>
 
   <main class="app">
-    <form class="panel" id="form" autocomplete="off">
-      <h2>Your night</h2>
-      <p class="hint">This is an example request. Change anything, then press Find my shows.</p>
+    <form class="brief" id="brief" autocomplete="off" onsubmit="return false">
+      <div class="head-row">
+        <h2>Your night</h2>
+        <button type="button" class="linkbtn" id="reset">Start over</button>
+      </div>
 
-      <label class="field" for="text">Tell us about your night</label>
-      <textarea id="text" placeholder="Taking my mom for her birthday. We loved Wicked, I hate jukebox musicals, and we want to laugh.">Taking my mom for her birthday. We loved Wicked, I hate jukebox musicals, and we want to laugh.</textarea>
+      <div class="quick" id="quick"><p>Quick starts</p></div>
 
       <fieldset>
-        <legend class="legend">Who is going?</legend>
-        <div class="choices" id="who"></div>
+        <legend>Who is going?</legend>
+        <div class="tiles tile" id="who"></div>
       </fieldset>
-      <div id="kidsWrap" hidden>
-        <label class="field" for="kids">Kids' ages, if any</label>
-        <input type="text" id="kids" placeholder="for example 6, 10" inputmode="numeric">
+      <div id="ageWrap" hidden>
+        <span class="label" id="ageLabel">Youngest child</span>
+        <div class="stepper" role="group" aria-labelledby="ageLabel">
+          <button type="button" id="ageDown" aria-label="Younger"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <output id="ageOut">Not set</output>
+          <button type="button" id="ageUp" aria-label="Older"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+        </div>
+        <p class="hint">Shows meant for older audiences are ruled out. Skip it if the kids are not part of the plan.</p>
       </div>
 
       <fieldset>
-        <legend class="legend">Mood</legend>
-        <div class="choices" id="mood"></div>
+        <legend>What are you in the mood for?</legend>
+        <div class="tiles tile" id="mood"></div>
       </fieldset>
 
       <fieldset>
-        <legend class="legend">Is this your first Broadway show?</legend>
-        <div class="choices" id="first"></div>
+        <legend>Most you will pay per ticket</legend>
+        <div class="pills" id="budget"></div>
       </fieldset>
-
-      <label class="field" for="budget">Most you will pay per ticket</label>
-      <div class="budget">
-        <input type="range" id="budget" min="40" max="400" step="10" value="150" aria-describedby="budgetOut">
-        <output id="budgetOut" for="budget">$150</output>
-      </div>
-      <label class="check"><input type="checkbox" id="noLimit"> No budget limit</label>
 
       <fieldset>
-        <legend class="legend">Dealbreakers</legend>
-        <div class="choices" id="dealbreakers"></div>
-        <p class="hint" style="margin-top:8px">"Long runtime" means 2h45m or more. "No intermission" means you only want shows that run straight through.</p>
+        <legend>Been to Broadway before?</legend>
+        <div class="pills" id="first"></div>
       </fieldset>
 
-      <div class="ai-row" id="aiRow" hidden>
-        <label class="check" style="margin:0"><input type="checkbox" id="useAi" checked> Ask Claude to pick and explain</label>
-        <small>Your limits are applied first, so Claude only sees shows that fit. It runs on your Claude account and asks permission the first time.</small>
+      <fieldset>
+        <legend>Rule out</legend>
+        <div class="pills" id="rules"></div>
+        <p class="hint">"Under 2h45" drops the longest shows. "No intermission" keeps only shows that run straight through.</p>
+      </fieldset>
+
+      <div>
+        <label class="label" for="text">Anything else?</label>
+        <textarea id="text" placeholder="We loved Wicked. Nothing too loud. We want to cry a little."></textarea>
+        <p class="hint">Say what you loved or can't stand. The picks update after you stop typing.</p>
       </div>
 
-      <button class="go" id="go" type="submit">Find my shows</button>
+      <div class="claude-row" id="claudeRow" hidden>
+        <button type="button" class="solid" id="askClaude">Ask Claude to pick</button>
+        <p class="hint" style="margin:0">Claude chooses only among shows that already fit your limits. It runs on your Claude account and asks permission the first time.</p>
+      </div>
     </form>
 
-    <section aria-live="polite" aria-label="Your recommendations">
-      <div id="results"></div>
+    <section class="results" id="results" aria-labelledby="resultsTitle">
+      <div class="results-head" id="picksTop">
+        <h2 id="resultsTitle">Your picks</h2>
+        <p class="scope" id="scope"></p>
+        <p class="ruled" id="ruled" hidden></p>
+      </div>
+      <p class="sr-only" id="status" role="status"></p>
+      <div id="notices"></div>
+      <div id="picks"></div>
+      <div class="actions" id="actions" hidden>
+        <button type="button" class="line" id="more">Show me different picks</button>
+        <button type="button" class="line" id="copy">Copy my picks</button>
+      </div>
+      <div class="copybox" id="copybox" hidden>
+        <p class="hint">Your browser blocked copying. Select this text and copy it.</p>
+        <textarea id="copytext" readonly aria-label="Your picks as text"></textarea>
+      </div>
       <p class="foot" id="foot"></p>
     </section>
   </main>
 </div>
+<button type="button" class="jump" id="jump"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span id="jumpText">See your picks</span></button>
 
 <script>
 const SHOWS = /*__CATALOG__*/null;
@@ -199,6 +264,7 @@ const SHOWS = /*__CATALOG__*/null;
   const R = window.Recommender;
   const BY_TITLE = Object.fromEntries(SHOWS.map((s) => [s.title, s]));
   const $ = (id) => document.getElementById(id);
+  const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function el(tag, cls, text) {
     const n = document.createElement(tag);
@@ -206,141 +272,315 @@ const SHOWS = /*__CATALOG__*/null;
     if (text !== undefined) n.textContent = text;
     return n;
   }
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-  // ---- build the choice controls
-  function choiceGroup(containerId, name, items, selected, cls) {
-    const box = $(containerId);
-    items.forEach(([value, label, type]) => {
-      const wrap = el("label", "choice" + (cls ? " " + cls : ""));
+  // ---------------------------------------------------------------- state
+  const BUDGETS = [[75, "Under $75"], [150, "Under $150"], [250, "Under $250"], [null, "Any price"]];
+  const WHO = [["", "Not sure", "unsure"], ["solo", "Solo", "solo"], ["date", "Date night", "date"], ["friends", "Friends", "friends"], ["family", "Family", "family"]];
+  const MOOD = [["", "Surprise me", "different"], ["laugh", "Laugh", "laugh"], ["cry", "Cry", "cry"], ["be wowed", "Be wowed", "wow"], ["sing along", "Sing along", "sing"]];
+  const RULES = [["jukebox", "No jukebox musicals"], ["adult content", "Nothing adult"], ["long runtime", "Under 2h45"], ["loud effects", "Not too loud"], ["no intermission", "No intermission"]];
+  const FIRST = [["", "Either"], ["yes", "First time"], ["no", "Been before"]];
+  const ICONS = {
+    unsure: '<circle cx="12" cy="12" r="8.5"/><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.400-1 .900-1 1.700M12 17h.01"/>',
+    solo: '<circle cx="12" cy="8" r="3.4"/><path d="M5.500 20c.8-4 3.400-6 6.500-6s5.700 2 6.500 6"/>',
+    date: '<path d="M12 20s-7.500-4.600-7.500-10A4.200 4.200 0 0 1 12 7.600 4.200 4.200 0 0 1 19.500 10c0 5.400-7.500 10-7.500 10z"/>',
+    friends: '<circle cx="12" cy="8" r="2.600"/><circle cx="5.500" cy="10" r="2.100"/><circle cx="18.500" cy="10" r="2.100"/><path d="M7.800 19c.5-3 2.100-4.600 4.200-4.600s3.700 1.600 4.200 4.600M2 18c.3-2.200 1.500-3.400 3.500-3.600M22 18c-.3-2.200-1.500-3.400-3.500-3.600"/>',
+    family: '<circle cx="8" cy="7.500" r="2.800"/><circle cx="17" cy="11" r="2"/><path d="M3 20c.6-4.200 2.400-6.200 5-6.200s4.400 2 5 6.200M14 20c.3-2.600 1.500-4 3-4s2.700 1.400 3 4"/>',
+    laugh: '<circle cx="12" cy="12" r="8.500"/><path d="M8 13.500c1 2.200 2.400 3.200 4 3.200s3-1 4-3.200zM9 9.500h.01M15 9.500h.01"/>',
+    cry: '<path d="M12 3.500c3 4 5.500 6.600 5.500 9.600a5.500 5.500 0 0 1-11 0c0-3 2.500-5.600 5.500-9.600z"/>',
+    wow: '<path d="M12 3l2.300 5.600L20 9.500l-4.300 3.800 1.300 5.700L12 15.800 7 19l1.300-5.700L4 9.500l5.700-.9z"/>',
+    sing: '<path d="M9 18V6l10-2v12"/><circle cx="6.500" cy="18" r="2.500"/><circle cx="16.500" cy="16" r="2.500"/>',
+    different: '<path d="M12 3l3 6 6 3-6 3-3 6-3-6-6-3 6-3z"/>',
+  };
+  const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+
+  const DEFAULT = { who: "date", mood: "cry", budget: 150, age: null, first: "", rules: [], text: "" };
+  const PRESETS = [
+    ["Date night, $150 max", { who: "date", mood: "cry", budget: 150, age: null, first: "", rules: [], text: "" }],
+    ["Family, youngest is 6", { who: "family", mood: "be wowed", budget: null, age: 6, first: "", rules: [], text: "" }],
+    ["Big laughs, no jukebox", { who: "friends", mood: "laugh", budget: 150, age: null, first: "", rules: ["jukebox"], text: "" }],
+    ["First time, nothing too long", { who: "", mood: "", budget: 150, age: null, first: "yes", rules: ["long runtime"], text: "" }],
+  ];
+  let state = { ...DEFAULT, rules: [] };
+  let offset = 0;
+  let lastResult = null;
+
+  // ---------------------------------------------------------------- build the controls
+  function optionGroup(id, name, items, type, tile) {
+    const box = $(id);
+    items.forEach(([value, label, ic]) => {
+      const wrap = el("label", "opt");
       const input = document.createElement("input");
-      input.type = type || "radio";
-      input.name = name;
-      input.value = value;
-      if (type === "checkbox" ? selected.includes(value) : value === selected) input.checked = true;
-      wrap.append(input, el("span", "", label));
+      input.type = type; input.name = name; input.value = value === null ? "any" : String(value);
+      const face = el("span", "face");
+      if (tile && ic) face.innerHTML = icon(ic);
+      face.append(document.createTextNode(label));
+      wrap.append(input, face);
       box.append(wrap);
     });
   }
-  choiceGroup("who", "who", [["", "Not sure"], ["solo", "Solo"], ["date", "Date"], ["friends", "Friends"], ["family", "Family"]], "family");
-  choiceGroup("mood", "mood", [["", "Any"], ["laugh", "Laugh"], ["cry", "Cry"], ["be wowed", "Be wowed"], ["sing along", "Sing along"], ["something different", "Something different"]], "laugh");
-  choiceGroup("first", "first", [["", "Not said"], ["yes", "Yes"], ["no", "No"]], "");
-  choiceGroup("dealbreakers", "db", R.DEALBREAKERS.map((d) => [d, d, "checkbox"]), ["jukebox"], "box");
+  optionGroup("who", "who", WHO, "radio", true);
+  optionGroup("mood", "mood", MOOD, "radio", true);
+  optionGroup("budget", "budget", BUDGETS, "radio", false);
+  optionGroup("first", "first", FIRST, "radio", false);
+  optionGroup("rules", "rules", RULES, "checkbox", false);
+  PRESETS.forEach(([label, set]) => {
+    const b = el("button", "", label); b.type = "button";
+    b.addEventListener("click", () => { state = { ...set, rules: [...set.rules] }; syncControls(); update(); });
+    $("quick").append(b);
+  });
 
-  const val = (name) => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
-  function syncForm() {
-    $("kidsWrap").hidden = val("who") !== "family";
-    $("budget").disabled = $("noLimit").checked;
-    $("budgetOut").textContent = $("noLimit").checked ? "None" : "$" + $("budget").value;
+  function setRadio(name, value) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach((i) => { i.checked = i.value === value; });
   }
-  $("form").addEventListener("input", syncForm);
-  syncForm();
+  function ageText() { return state.age === null ? "Not set" : "Age " + state.age; }
+  function syncControls() {
+    setRadio("who", state.who);
+    setRadio("mood", state.mood);
+    setRadio("budget", state.budget === null ? "any" : String(state.budget));
+    setRadio("first", state.first);
+    document.querySelectorAll('input[name="rules"]').forEach((i) => { i.checked = state.rules.includes(i.value); });
+    $("text").value = state.text;
+    $("ageWrap").hidden = state.who !== "family";
+    $("ageOut").textContent = ageText();
+  }
 
-  function readInput() {
+  function toInput() {
     return {
-      text: $("text").value.trim(),
-      who: val("who") || null,
-      kidsAges: $("kids").value,
-      mood: val("mood") || null,
-      maxPrice: $("noLimit").checked ? null : Number($("budget").value),
-      dealbreakers: [...document.querySelectorAll('input[name="db"]:checked')].map((i) => i.value),
-      firstShow: { yes: true, no: false }[val("first")] ?? null,
+      text: state.text.trim(), who: state.who || null, kidsAges: state.age === null ? "" : String(state.age),
+      mood: state.mood || null, maxPrice: state.budget, dealbreakers: state.rules,
+      firstShow: { yes: true, no: false }[state.first] ?? null,
     };
   }
 
-  // ---- render results
-  function fmtDate(iso) {
-    return new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  }
-  function dollars(p) { return p.price_range.replace(/\$(\d+)-\$(\d+)/, "$$$1 to $$$2"); }
+  // ---------------------------------------------------------------- cover art: a blocking diagram per show
+  function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rng(seed) { return function () { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const TAPE = ["#ff4f9a", "#2fd17c", "#ffd23f", "#33c7ff", "#ff8a3d"];
 
-  function stub(p, i) {
+  function layoutFor(show) {
+    const t = (show.tags || []).join(" ").toLowerCase();
+    if (/horror|scary|thriller/.test(t)) return "diagonal";
+    if (/funny|comedy|camp|farce|satire/.test(t)) return "scatter";
+    if (/spectacle|special effects|fantasy/.test(t)) return "radial";
+    if (/emotional|romantic|myth/.test(t)) return "route";
+    if (/jukebox|rock|pop|jazz|music|hip-hop|concert|big-band|dance/.test(t)) return "line";
+    return "symmetric";
+  }
+  function coverTitle(title) {
+    return title.replace(/ \(.*\)$/, "").replace(/[;:].*$/, "").replace(/^Richard O'Brien's /, "").replace(/^The (?=\w+ \w)/, "").toUpperCase();
+  }
+  function wrapLines(text, max) {
+    const words = text.split(" "), lines = []; let cur = "";
+    for (const w of words) { if (cur && (cur + " " + w).length > max) { lines.push(cur); cur = w; } else cur = cur ? cur + " " + w : w; }
+    if (cur) lines.push(cur); return lines;
+  }
+
+  function coverSvg(show, rank, card) {
+    const seed = hash(show.title), r = rng(seed), hue = seed % 360;
+    const X0 = 30, X1 = 210, Y0 = 56, Y1 = 176, CX = 120, CY = (Y0 + Y1) / 2;
+    const col = () => TAPE[Math.floor(r() * TAPE.length)];
+    const pt = () => [X0 + 16 + r() * (X1 - X0 - 32), Y0 + 14 + r() * (Y1 - Y0 - 28)];
+    let i = 0;
+    const mark = (x, y, kind, c) => {
+      const k = i++;
+      const g = `<g class="mark" style="--i:${k};--card:${card}" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="square">`;
+      if (kind === 0) return g + `<path d="M${x - 6} ${y - 6}L${x + 6} ${y + 6}M${x + 6} ${y - 6}L${x - 6} ${y + 6}"/></g>`;
+      if (kind === 1) return g + `<path d="M${x - 7} ${y - 5}H${x + 7}M${x} ${y - 5}V${y + 7}"/></g>`;
+      if (kind === 2) return g + `<path d="M${x - 6} ${y - 7}V${y + 5}H${x + 6}"/></g>`;
+      return g + `<rect x="${x - 5}" y="${y - 5}" width="10" height="10"/></g>`;
+    };
+    const pick = () => Math.floor(r() * 4);
+    let marks = "", route = "";
+    const lay = layoutFor(show);
+    if (lay === "scatter") { for (let n = 0; n < 10; n++) { const [x, y] = pt(); marks += mark(x, y, pick(), col()); } }
+    else if (lay === "radial") { marks += mark(CX, CY, 3, TAPE[2]); for (let n = 0; n < 7; n++) { const a = (n / 7) * Math.PI * 2 + r() * .3, rr = 38 + (n % 2) * 22; marks += mark(CX + Math.cos(a) * rr * 1.45, CY + Math.sin(a) * rr * .85, pick(), col()); } }
+    else if (lay === "route") {
+      const a = [X0 + 24, Y1 - 22], b = [X1 - 24, Y0 + 22], c1 = [CX - 50 + r() * 40, Y0 + 20], c2 = [CX + 10 + r() * 50, Y1 - 10];
+      const c = col(); const ang = Math.atan2(b[1] - c2[1], b[0] - c2[0]);
+      route = `<g class="route" style="--card:${card}"><path d="M${a[0]} ${a[1]}C${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${b[0]} ${b[1]}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="5 4"/><path d="M0 0L-9 -4.5L-9 4.5Z" transform="translate(${b[0]} ${b[1]}) rotate(${ang * 180 / Math.PI})" fill="${c}"/></g>`;
+      marks += mark(a[0], a[1], 0, c) + mark(b[0], b[1], 3, c);
+      for (let n = 0; n < 3; n++) { const [x, y] = pt(); marks += mark(x, y, pick(), col()); }
+    }
+    else if (lay === "line") { const y0 = CY - 10 + r() * 20; for (let n = 0; n < 8; n++) marks += mark(X0 + 18 + n * ((X1 - X0 - 36) / 7), y0 + Math.sin(n * .9) * 8, n % 2 ? 1 : 0, col()); }
+    else if (lay === "diagonal") { for (let n = 0; n < 7; n++) { const t = n / 6; marks += mark(X0 + 18 + t * (X1 - X0 - 36), Y0 + 16 + t * (Y1 - Y0 - 32) + (r() - .5) * 14, pick(), n % 3 === 0 ? TAPE[0] : col()); } }
+    else { for (let n = 0; n < 4; n++) { const x = CX - 20 - r() * 62, y = Y0 + 16 + r() * (Y1 - Y0 - 32), k = pick(), c = col(); marks += mark(x, y, k, c) + mark(2 * CX - x, y, k, c); } marks += mark(CX, CY, 3, TAPE[2]); }
+
+    const title = coverTitle(show.title); let max = 14, lines = wrapLines(title, max);
+    while (lines.length > 4 && max < 24) { max += 2; lines = wrapLines(title, max); }
+    const longest = Math.max(...lines.map((l) => l.length));
+    const fs = Math.max(19, Math.min(34, Math.floor(196 / (longest * 0.47))));
+    const lastY = 292, firstY = lastY - (lines.length - 1) * fs;
+    const text = lines.map((l, n) => `<text class="ct" x="24" y="${(firstY + n * fs).toFixed(1)}" font-size="${fs}" fill="#fff" style="font-family:var(--font-display);font-weight:700;letter-spacing:.02em">${esc(l)}</text>`).join("");
+    const theater = esc(show.theater.toUpperCase());
+    const grid = [60, 90, 120, 150, 180].map((x) => `<path d="M${x} ${Y0}V${Y1}" stroke="hsl(${hue} 22% 30%)" stroke-width=".7"/>`).join("") +
+      [86, 116, 146].map((y) => `<path d="M${X0} ${y}H${X1}" stroke="hsl(${hue} 22% 30%)" stroke-width=".7"/>`).join("");
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" aria-hidden="true" focusable="false">
+      <rect width="240" height="320" fill="hsl(${hue} 42% 11%)"/>
+      <rect x="12" y="12" width="216" height="296" fill="none" stroke="hsl(${hue} 30% 26%)" stroke-width="1"/>
+      <rect x="14" y="${Y0}" width="16" height="${Y1 - Y0}" fill="hsl(${hue} 40% 8%)"/><rect x="210" y="${Y0}" width="16" height="${Y1 - Y0}" fill="hsl(${hue} 40% 8%)"/>
+      <path d="M${X0} ${Y0}H${X1}V${Y1}Q${CX} ${Y1 + 24} ${X0} ${Y1}Z" fill="hsl(${hue} 30% 17%)" stroke="hsl(${hue} 24% 36%)" stroke-width="1.2"/>
+      ${grid}<path d="M${CX} ${Y0}V${Y1 + 12}" stroke="hsl(${hue} 24% 44%)" stroke-width="1" stroke-dasharray="3 3"/>
+      ${route}${marks}
+      <text x="24" y="38" font-size="11" fill="hsl(${hue} 20% 78%)" style="font-family:var(--font-display);font-weight:600;letter-spacing:.16em">${show.genre === "play" ? "PLAY" : "MUSICAL"}</text>
+      <circle cx="208" cy="32" r="13" fill="#fff"/><text x="208" y="38" text-anchor="middle" font-size="18" fill="#0b1220" style="font-family:var(--font-display);font-weight:700">${rank}</text>
+      ${text}
+      <text x="24" y="308" font-size="9.5" fill="hsl(${hue} 20% 78%)" style="font-family:var(--font-body);font-weight:500;letter-spacing:.1em">${theater}</text>
+    </svg>`;
+  }
+  function coverNode(show, rank, card) {
+    const wrap = el("div", "cover");
+    const svgNode = () => document.importNode(new DOMParser().parseFromString(coverSvg(show, rank, card), "image/svg+xml").documentElement, true);
+    if (show.cover) {
+      const img = document.createElement("img");
+      img.alt = ""; img.loading = "lazy"; img.src = show.cover;
+      img.addEventListener("error", () => { wrap.replaceChildren(svgNode()); });
+      wrap.append(img);
+    } else wrap.append(svgNode());
+    return wrap;
+  }
+
+  // Shrink any cover title line that is wider than the cover, whatever font the browser ended up with.
+  function fitCovers() {
+    document.querySelectorAll(".cover svg text.ct").forEach((t) => {
+      t.removeAttribute("textLength");
+      try { const w = t.getComputedTextLength(); if (w > 188) { t.setAttribute("textLength", "188"); t.setAttribute("lengthAdjust", "spacingAndGlyphs"); } } catch (e) { /* not laid out yet */ }
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitCovers);
+
+  // ---------------------------------------------------------------- results
+  function fmtDate(iso) { return new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+  function money(p) { return p.price_range.replace(/\$(\d+)-\$(\d+)/, "$$$1 to $$$2"); }
+
+  function card(p, idx) {
     const show = BY_TITLE[p.title] || {};
-    const card = el("article", "stub" + (p.fits_all_limits ? "" : " near"));
-    const num = el("div", "num");
-    num.append(el("b", "", String(i + 1)), el("small", "", "pick"));
-    const body = el("div", "body");
-    body.append(el("h3", "", p.title), el("div", "where", p.theater));
-
+    const art = el("article", "show");
+    art.setAttribute("aria-label", p.title);
+    art.append(coverNode(show, p.rank || idx + 1, idx));
+    const info = el("div", "info");
+    info.append(el("h3", "", p.title));
+    info.append(el("p", "meta", [p.theater, p.genre === "play" ? "Play" : "Musical", R.runtimeText(p), p.age].join(" · ")));
+    const st = el("span", "status " + (p.fits_all_limits ? "go" : "standby"));
+    st.append(el("span", "lamp " + (p.fits_all_limits ? "go" : "standby")), document.createTextNode(p.fits_all_limits ? "Go: fits all your limits" : "Standby: near miss"));
+    info.append(st);
+    const rows = el("dl", "rows");
+    const row = (k, v, cls) => { const d = el("div"); d.append(el("dt", "", k), el("dd", cls || "", v)); rows.append(d); };
+    row("Why it fits", p.why_it_fits);
+    row("Heads up", p.caution);
+    row("Price", money(p), "price");
+    info.append(rows);
     const chips = el("div", "chips");
-    chips.append(el("span", "chip", p.genre === "play" ? "Play" : "Musical"));
-    chips.append(el("span", "chip", R.runtimeText(p)));
-    chips.append(el("span", "chip", p.age));
     if (p.rush_or_lottery) chips.append(el("span", "chip rush", "Rush or lottery often available"));
-    if (p.status === "previews" && p.opens) chips.append(el("span", "chip soon", "In previews, opens " + fmtDate(p.opens).replace(/, \d{4}$/, "")));
-    if (!p.fits_all_limits) chips.append(el("span", "chip near", "Near miss"));
-    body.append(chips);
-
-    const why = el("p"); why.append(el("span", "k", "Why it fits: "), document.createTextNode(p.why_it_fits));
-    const heads = el("p"); heads.append(el("span", "k", "Heads up: "), document.createTextNode(p.caution));
-    const price = el("p"); price.append(el("span", "k", "Price: "), document.createTextNode(dollars(p)));
-    body.append(why, heads, price);
-
-    if (show.price_basis) body.append(el("p", "fine", "Price note: " + show.price_basis));
-    card.append(num, body);
-    return card;
+    if (p.status === "previews" && p.opens) chips.append(el("span", "chip soon", "In previews, opens " + fmtDate(p.opens)));
+    if (chips.children.length) info.append(chips);
+    if (show.price_basis) info.append(el("p", "fine", show.price_basis));
+    art.append(info);
+    return art;
   }
 
-  function render(result, input, opts) {
-    const box = $("results");
-    box.replaceChildren();
-    const head = el("div", "results-head");
-    head.append(el("h2", "", "Your three shows"));
-    const src = result.source === "claude" ? "Picked by Claude from shows that already fit your limits"
-      : "Picked by the built-in ranker from shows that already fit your limits";
-    head.append(el("span", "source", src));
-    box.append(head);
-    if (opts && opts.example) box.append(el("div", "notice", "Showing results for the example request. Edit the form and press Find my shows for your own."));
-    if (result.message) box.append(el("div", "notice warn", result.message));
-    if (result.aiError) box.append(el("div", "notice", "Claude could not answer this time, so these picks come from the built-in ranker."));
-    result.picks.forEach((p, i) => box.append(stub(p, i)));
-    if (result.assumptions) box.append(el("div", "notice", "Assumptions: " + result.assumptions));
-  }
-
-  // ---- optional Claude step (only exists inside the Claude artifact viewer)
-  let sample = null;
-  if (window.claude && typeof window.claude.use === "function") {
-    Promise.resolve(window.claude.use("sample")).then((s) => {
-      if (typeof s === "function") { sample = s; $("aiRow").hidden = false; }
-    }).catch(() => {});
-  }
-  async function askClaude(system, user) {
-    const r = await sample(system + "\n\n" + user, { modelTier: "default", cache: false });
-    return r.text;
-  }
-
-  $("form").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const input = readInput();
-    if (!input.text) {
-      $("results").replaceChildren(el("div", "notice warn", "Write a sentence or two about your night first."));
-      return;
+  const BUCKETS = [[/over your \$|budget|\$/i, "over budget"], [/ages?|kids/i, "too mature for your kids"], [/jukebox/i, "jukebox"], [/adult/i, "adult content"],
+    [/runs about|runtime|long/i, "too long"], [/loud/i, "loud"], [/intermission/i, "have an intermission"]];
+  function ruledOut(input) {
+    const limits = { maxPrice: input.maxPrice, kidsAges: input.who === "family" ? R.parseAges(input.kidsAges) : [], dealbreakers: input.dealbreakers };
+    const counts = new Map(); let total = 0;
+    for (const s of SHOWS) {
+      const v = R.violations(s, limits); if (!v.length) continue; total++;
+      const b = BUCKETS.find(([re]) => re.test(v[0])); const k = b ? b[1] : "other limits";
+      counts.set(k, (counts.get(k) || 0) + 1);
     }
-    const btn = $("go");
-    btn.disabled = true;
-    const useAi = sample && $("useAi").checked;
-    const label = btn.textContent;
-    btn.replaceChildren(el("span", "spin"), document.createTextNode(useAi ? "Asking Claude..." : "Picking your shows..."));
-    try {
-      const result = useAi ? await R.recommendWithAI(SHOWS, input, askClaude) : R.recommendLocal(SHOWS, input);
-      render(result, input);
-    } catch (e) {
-      render(R.recommendLocal(SHOWS, input), input);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = label;
-    }
+    return { total, parts: [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${n} ${k}`) };
+  }
+
+  function render(result, input) {
+    lastResult = result;
+    $("picks").replaceChildren();
+    $("notices").replaceChildren();
+    result.picks.forEach((p, i) => $("picks").append(card(p, i)));
+    fitCovers();
+    const out = ruledOut(input);
+    const fit = SHOWS.length - out.total;
+    const src = result.source === "claude" ? "Claude picked from the shows that fit." : "Ranked by the built-in matcher.";
+    $("scope").replaceChildren(el("b", "", String(fit)), document.createTextNode(` of ${SHOWS.length} shows fit your limits. ${src}`));
+    const ruled = $("ruled");
+    if (out.total) {
+      ruled.hidden = false; ruled.replaceChildren(el("span", "lamp stop"), document.createTextNode(out.parts.length === 1 ? `Ruled out ${out.total}: ${out.parts[0].replace(/^\d+ /, "")}` : `Ruled out ${out.total}: ${out.parts.join(", ")}`));
+    } else ruled.hidden = true;
+    if (result.message) $("notices").append(el("div", "notice warn", result.message));
+    if (result.aiError) $("notices").append(el("div", "notice", "Claude could not answer this time, so these picks come from the built-in matcher."));
+    if (result.assumptions) $("notices").append(el("div", "notice", "Assumptions: " + (Array.isArray(result.assumptions) ? result.assumptions.join(" ") : result.assumptions)));
+    const canMore = result.source === "built-in" && (result.eligibleCount || 0) > 3;
+    $("actions").hidden = !result.picks.length;
+    $("more").hidden = !canMore;
+    $("copybox").hidden = true;
+    $("status").textContent = `${result.picks.length} picks: ${result.picks.map((p) => p.title).join(", ")}.`;
+    $("jumpText").textContent = `See your ${result.picks.length} picks`;
+  }
+
+  function update(keepOffset) {
+    if (!keepOffset) offset = 0;
+    const input = toInput();
+    render(R.recommendLocal(SHOWS, input, { offset }), input);
+  }
+
+  // ---------------------------------------------------------------- events
+  let typing = null;
+  $("brief").addEventListener("change", (e) => {
+    const t = e.target; if (!t || !t.name) return;
+    if (t.name === "who") { state.who = t.value; $("ageWrap").hidden = state.who !== "family"; if (state.who !== "family") { state.age = null; $("ageOut").textContent = ageText(); } }
+    else if (t.name === "mood") state.mood = t.value;
+    else if (t.name === "budget") state.budget = t.value === "any" ? null : Number(t.value);
+    else if (t.name === "first") state.first = t.value;
+    else if (t.name === "rules") state.rules = [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value);
+    update();
+  });
+  $("text").addEventListener("input", () => { state.text = $("text").value; clearTimeout(typing); typing = setTimeout(update, 450); });
+  $("ageUp").addEventListener("click", () => { state.age = state.age === null ? 6 : Math.min(17, state.age + 1); $("ageOut").textContent = ageText(); update(); });
+  $("ageDown").addEventListener("click", () => { state.age = state.age === null || state.age <= 1 ? null : state.age - 1; $("ageOut").textContent = ageText(); update(); });
+  $("reset").addEventListener("click", () => { state = { ...DEFAULT, rules: [] }; syncControls(); update(); });
+  $("more").addEventListener("click", () => { offset = (offset + 3) % (lastResult.eligibleCount || 3); update(true); $("picksTop").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); });
+
+  $("copy").addEventListener("click", async () => {
+    if (!lastResult) return;
+    const text = "My Broadway picks:\n" + lastResult.picks.map((p, i) => `${i + 1}. ${p.title} at ${p.theater}, ${money(p)} (typical, not live)`).join("\n") + "\nMade with Broadway Concierge.";
+    try { await navigator.clipboard.writeText(text); $("status").textContent = "Copied your picks."; $("copy").textContent = "Copied"; setTimeout(() => { $("copy").textContent = "Copy my picks"; }, 1800); }
+    catch (e) { $("copybox").hidden = false; const t = $("copytext"); t.value = text; t.focus(); t.select(); }
   });
 
-  // ---- footer and first view
-  const checked = fmtDate(SHOWS[0].last_verified.slice(0, 10));
-  const foot = $("foot");
-  foot.append(document.createTextNode(`${SHOWS.length} shows. Show, theater and runtime checked ${checked} against Broadway Direct's what's-on guide. Prices are typical ranges, not live, and ages and content notes are estimates, so confirm on the official seller before you buy. `));
-  const a = el("a", "", "Broadway Direct"); a.href = "https://broadwaydirect.com/"; a.target = "_blank"; a.rel = "noopener";
-  foot.append(a, document.createTextNode(" sells official tickets. "));
-  const b = el("a", "", "About this project"); b.href = "https://building-with-ai-f26.github.io/cb5646-broadway-recommender/"; b.target = "_blank"; b.rel = "noopener";
-  foot.append(b, document.createTextNode("."));
+  // optional Claude step (only exists inside the Claude artifact viewer)
+  let sample = null;
+  try {
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.resolve(window.claude.use("sample")).then((s) => { if (typeof s === "function") { sample = s; $("claudeRow").hidden = false; } }).catch(() => {});
+    }
+  } catch (e) { /* no Claude here, built-in matcher only */ }
+  $("askClaude").addEventListener("click", async () => {
+    const btn = $("askClaude"), input = toInput(), label = btn.textContent;
+    btn.disabled = true; btn.textContent = "Asking Claude...";
+    try {
+      const result = await R.recommendWithAI(SHOWS, input, async (system, user) => (await sample(system + "\n\n" + user, { modelTier: "default", cache: false })).text);
+      render(result, input);
+    } catch (e) { render({ ...R.recommendLocal(SHOWS, input, { offset }), aiError: "x" }, input); }
+    finally { btn.disabled = false; btn.textContent = label; }
+  });
 
-  render(R.recommendLocal(SHOWS, readInput()), readInput(), { example: true });
+  // phone: a bar that jumps down to the picks while they are off screen
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => { $("jump").classList.toggle("on", !entries[0].isIntersecting); }, { threshold: 0.05 });
+    io.observe($("picks"));
+  }
+  $("jump").addEventListener("click", () => $("picksTop").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }));
+
+  // ---------------------------------------------------------------- footer and first view
+  const checked = new Date(SHOWS[0].last_verified.slice(0, 10) + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const foot = $("foot");
+  foot.append(document.createTextNode(`Show, theater and runtime checked ${checked} against Broadway Direct's what's-on guide. Prices are typical ranges, not live; ages and content notes are estimates, so confirm on the official seller before you buy. Covers are original diagrams made for this page, not the shows' official artwork. `));
+  const a = el("a", "", "Broadway Direct"); a.href = "https://broadwaydirect.com/"; a.target = "_blank"; a.rel = "noopener";
+  const b = el("a", "", "About this project"); b.href = "https://building-with-ai-f26.github.io/cb5646-broadway-recommender/"; b.target = "_blank"; b.rel = "noopener";
+  foot.append(a, document.createTextNode(" sells official tickets. "), b, document.createTextNode("."));
+
+  syncControls();
+  update();
 })();
 </script>
 </body>
