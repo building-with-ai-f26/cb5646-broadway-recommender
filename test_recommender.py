@@ -16,7 +16,7 @@ CASES = [
     dict(name="tight budget", text="Cheap fun night out with a friend, I want to laugh.",
          who="friends", max_price=65, mood="laugh"),
     dict(name="family with kids", text="Family night, first Broadway show for the kids.",
-         who="family", kids_ages="6, 9", first_show=True),
+         who="kids", kids_ages="6, 9", first_show=True),
     dict(name="hates jukebox musicals", text="Taking my mom, we loved Wicked, I hate jukebox musicals.",
          who="family", max_price=150, dealbreakers=["jukebox"]),
     dict(name="date night, short show", text="Romantic date night, nothing too long.",
@@ -29,7 +29,7 @@ CASES = [
 def check_result(case, result):
     """The rules every result must follow. Returns a list of problems (empty = pass)."""
     problems = []
-    ages = parse_ages(case.get("kids_ages")) if case.get("who") == "family" else []
+    ages = parse_ages(case.get("kids_ages")) if case.get("who") == "kids" else []
     limits = dict(max_price=case.get("max_price"), kids_ages=ages, dealbreakers=case.get("dealbreakers"))
     if len(result["picks"]) != 3:
         problems.append(f"expected 3 cards, got {len(result['picks'])}")

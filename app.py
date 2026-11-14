@@ -149,7 +149,8 @@ def _negative_before(lower, idx):
 
 
 INFER = {
-    "family": re.compile(r"\b(kids?|children|child|sons?|daughters?|my boys|my girls|grand(?:kids?|sons?|daughters?|children|ma|pa|mother|father|parents)|nieces?|nephews?|family|mom|mum|mother|dad|father|parents|sisters?|brothers?|siblings?|cousins?|aunt|uncle|in-laws|toddlers?|teens?|teenagers?|tweens?|\d{1,2}[- ]year[- ]olds?)\b"),
+    "kids": re.compile(r"\b(kids?|children|child|sons?|daughters?|(?:my|our|the|two|three|four|\d) (?:little )?(?:boys|girls)(?!'? ?(?:night|trip|weekend))|grand(?:kids?|sons?|daughters?|children)|nieces?|nephews?|toddlers?|teens?|teenagers?|tweens?|\d{1,2}[- ]year[- ]olds?)\b"),
+    "family": re.compile(r"\b(family|mom|mum|mother|dad|father|parents|sisters?|brothers?|siblings?|cousins?|aunt|uncle|in-laws|grand(?:ma|pa|mother|father|parents))\b"),
     "date": re.compile(r"\b(date|dates|anniversary|wife|husband|partner|girlfriend|boyfriend|fianc[eé]e?|spouse|honeymoon|valentine'?s?|romantic (?:evening|night)|couple)\b"),
     "friends": re.compile(r"\b(friends?|bff|besties?|best friend|buddies|pals|girls'? (?:night|trip|weekend)|guys'? (?:night|trip|weekend)|bachelorette|bachelor|coworkers?|co-workers?|colleagues|work (?:outing|team)|team outing|a group|our group|group of|roommates?|classmates?)\b"),
     "solo": re.compile(r"\b(solo|alone|by myself|on my own|just me|myself|treating myself|table for one)\b"),
@@ -186,7 +187,9 @@ def infer_answers(text):
         m = pattern.search(lower)
         return m if m and not _negative_before(lower, m.start()) else None
 
-    if said(INFER["family"]):
+    if said(INFER["kids"]):
+        out["who"] = "kids"
+    elif said(INFER["family"]):
         out["who"] = "family"
     elif said(INFER["date"]):
         out["who"] = "date"
@@ -223,7 +226,7 @@ def infer_answers(text):
     elif re.search(r"\b(either|any kind of show|don'?t mind)\b", lower) and (musical or play):
         out["showType"] = "either"
 
-    if out.get("who") == "family":
+    if out.get("who") == "kids":
         ages = [int(m.group(1)) for m in re.finditer(r"\b(\d{1,2})[- ](?:year[- ]old|yo|yr[- ]old)s?\b", lower)]
         for m in re.finditer(r"\b(?:youngest|kids?|children|sons?|daughters?|ages?|aged|boys|girls)\b[^.\d$]{0,14}(\d{1,2})((?:\s*(?:,|and|&)\s*\d{1,2})*)", lower):
             ages += [int(n) for n in re.findall(r"\d{1,2}", m.group(1) + m.group(2))]
@@ -273,7 +276,7 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
     fits_all_limits. Picks with fits_all_limits=False are labeled near-misses.
     """
     shows = load_shows()
-    ages = parse_ages(kids_ages) if who == "family" else []
+    ages = parse_ages(kids_ages) if who == "kids" else []
     limits = dict(max_price=max_price, kids_ages=ages, dealbreakers=dealbreakers,
                   show_type=show_type if show_type in SHOW_TYPES else None)
 
@@ -284,8 +287,9 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
     picks, assumptions = [], ""
     if want:
         details = {
-            "who_is_going": who or "not said",
-            "kids_ages": ages or "not said",
+            "who_is_going": {"family": "adult family members, all 18 or older",
+                             "kids": "a group with children under 18"}.get(who, who or "not said"),
+            "kids_ages": ages or ("not said" if who == "kids" else "none"),
             "mood": mood or "not said",
             "max_price_per_ticket": max_price or "no limit",
             "show_type": show_type if show_type in SHOW_TYPES else "either",
@@ -404,8 +408,9 @@ if __name__ == "__main__":
     sub = p.add_subparsers(dest="cmd", required=True)
     rec = sub.add_parser("recommend")
     rec.add_argument("request")
-    rec.add_argument("--who", choices=["solo", "date", "friends", "family"])
-    rec.add_argument("--kids-ages", default="", help='e.g. "6, 9" (used when --who family)')
+    rec.add_argument("--who", choices=["solo", "date", "friends", "family", "kids"],
+                     help='"family" means adults only; "kids" means children are coming')
+    rec.add_argument("--kids-ages", default="", help='e.g. "6, 9" (used when --who kids)')
     rec.add_argument("--mood", choices=["laugh", "cry", "be wowed", "sing along", "something different"])
     rec.add_argument("--max-price", type=int, help="max price per ticket in dollars")
     rec.add_argument("--dealbreakers", nargs="*", choices=DEALBREAKERS, default=[])

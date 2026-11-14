@@ -227,6 +227,7 @@ button.line:hover { background: var(--accent-soft); }
       <fieldset>
         <legend>Who is going? <span class="req" data-req="who">Required</span></legend>
         <div class="tiles tile" id="who"></div>
+        <p class="hint">Family means adults only (18+). Pick "Taking kids" if anyone under 18 is coming.</p>
       </fieldset>
       <div id="ageWrap" hidden>
         <span class="label" id="ageLabel">Youngest child</span>
@@ -235,7 +236,7 @@ button.line:hover { background: var(--accent-soft); }
           <output id="ageOut">Not set</output>
           <button type="button" id="ageUp" aria-label="Older"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
         </div>
-        <p class="hint">Shows meant for older audiences are ruled out. Skip it if the kids are not part of the plan.</p>
+        <p class="hint">Shows meant for older audiences are ruled out. Without an age, picks lean toward shows for school-age kids.</p>
       </div>
 
       <fieldset>
@@ -502,10 +503,10 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     return `about ${t}${show.intermission ? "" : ", no intermission"}`;
   }
 
-  /** A family night where the text mentions kids but no ages were entered. */
-  function kidsWithoutAges(input) {
-    return input.who === "family" && !parseAges(input.kidsAges).length &&
-      /\b(kids?|child|children|sons?|daughters?|toddlers?|teens?|boys?|girls?)\b/i.test(input.text || "");
+  // Who is going: "family" means adults only (18+); "kids" means children are coming.
+  /** Kids are coming but no age was entered. */
+  function kidsWithoutAge(input) {
+    return input.who === "kids" && !parseAges(input.kidsAges).length;
   }
 
   /** Score one eligible show for this person. Returns {score, reasons}. */
@@ -523,15 +524,16 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     for (const mm of ctx.moods) {
       if (mm !== mood && (show.moods || []).includes(mm)) score += 1.5;
     }
-    if (input.who && (show.groups || []).includes(input.who)) {
+    // The catalog has no "kids" group; shows that work for families are the ones for kids too.
+    if (input.who && (show.groups || []).includes(input.who === "kids" ? "family" : input.who)) {
       score += 2;
       const who = { solo: "Works well on your own", date: "Good for a date", friends: "Good for a group of friends",
-        family: input.kidsAges && parseAges(input.kidsAges).length ? "Works for a family with kids" : "Good for a family outing" };
+        family: "Good for a family outing", kids: "Works for a night out with kids" };
       reasons.push(who[input.who]);
     }
-    if (input.who === "family" && hasTag(show, ["family-friendly"])) score += 2;
-    // Kids are coming but no ages were given: lean away from shows meant for teens and up.
-    if (kidsWithoutAges(input) && minAge(show) >= 13) score -= 4;
+    if (input.who === "kids" && hasTag(show, ["family-friendly"])) score += 2;
+    // Kids are coming but no age was given: lean away from shows meant for teens and up.
+    if (kidsWithoutAge(input) && minAge(show) >= 13) score -= 4;
     if (input.firstShow === true) {
       if (show.first_timer) {
         score += 2;
@@ -601,7 +603,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   // ------------------------------------------------------------ the recommender
 
   function prepare(shows, input) {
-    const ages = input.who === "family" ? parseAges(input.kidsAges) : [];
+    const ages = input.who === "kids" ? parseAges(input.kidsAges) : [];
     const limits = { maxPrice: input.maxPrice || null, kidsAges: ages, dealbreakers: input.dealbreakers || [], showType: input.showType || null };
     const ctx = analyzeText(input.text, shows);
     const eligible = shows.filter((s) => !violations(s, limits).length);
@@ -616,8 +618,8 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     if (!input.mood && !ctx.moods.size && !ctx.likes.length) notes.push("No mood or taste given, so I ranked by group, first-timer fit and budget.");
     if (ctx.dislikes.length) notes.push("Treated these as dislikes from your text: " + joinList(ctx.dislikes.map((t) => t.name)) + ".");
     if (ctx.loved.length) notes.push("Assumed you have already seen " + joinList(ctx.loved.map((s) => s.title)) + ".");
-    if (kidsWithoutAges(input))
-      notes.push("No kids' ages given, so I favored shows for school-age kids. Add ages to apply a hard age limit.");
+    if (kidsWithoutAge(input))
+      notes.push("No age given for the kids, so I favored shows for school-age kids. Set the youngest age to apply a hard age limit.");
     return notes.join(" ");
   }
 
@@ -682,7 +684,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
       return rest;
     });
     const details = {
-      who_is_going: input.who || "not said",
+      who_is_going: { family: "adult family members, all 18 or older", kids: "a group with children under 18" }[input.who] || input.who || "not said",
       kids_ages: parseAges(input.kidsAges).length ? parseAges(input.kidsAges) : "not said",
       mood: input.mood || "not said",
       max_price_per_ticket: input.maxPrice || "no limit",
@@ -743,7 +745,8 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
    * The same patterns live in app.py (infer_answers); tests/infer_cases.json keeps the two in step.
    */
   const INFER = {
-    family: /\b(kids?|children|child|sons?|daughters?|my boys|my girls|grand(?:kids?|sons?|daughters?|children|ma|pa|mother|father|parents)|nieces?|nephews?|family|mom|mum|mother|dad|father|parents|sisters?|brothers?|siblings?|cousins?|aunt|uncle|in-laws|toddlers?|teens?|teenagers?|tweens?|\d{1,2}[- ]year[- ]olds?)\b/,
+    kids: /\b(kids?|children|child|sons?|daughters?|(?:my|our|the|two|three|four|\d) (?:little )?(?:boys|girls)(?!'? ?(?:night|trip|weekend))|grand(?:kids?|sons?|daughters?|children)|nieces?|nephews?|toddlers?|teens?|teenagers?|tweens?|\d{1,2}[- ]year[- ]olds?)\b/,
+    family: /\b(family|mom|mum|mother|dad|father|parents|sisters?|brothers?|siblings?|cousins?|aunt|uncle|in-laws|grand(?:ma|pa|mother|father|parents))\b/,
     date: /\b(date|dates|anniversary|wife|husband|partner|girlfriend|boyfriend|fianc[eé]e?|spouse|honeymoon|valentine'?s?|romantic (?:evening|night)|couple)\b/,
     friends: /\b(friends?|bff|besties?|best friend|buddies|pals|girls'? (?:night|trip|weekend)|guys'? (?:night|trip|weekend)|bachelorette|bachelor|coworkers?|co-workers?|colleagues|work (?:outing|team)|team outing|a group|our group|group of|roommates?|classmates?)\b/,
     solo: /\b(solo|alone|by myself|on my own|just me|myself|treating myself|table for one)\b/,
@@ -773,8 +776,10 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     const out = {};
     const said = (re) => { const m = re.exec(lower); return m && !negativeBefore(lower, m.index) ? m : null; };
 
-    // Who is going. Kids win over a partner ("my wife and our kids" is a family night).
-    if (said(INFER.family)) out.who = "family";
+    // Who is going. Kids win over everything ("my wife and our kids" is a night out with kids);
+    // adult relatives ("my mom", "my sister") mean a family outing, which is adults only.
+    if (said(INFER.kids)) out.who = "kids";
+    else if (said(INFER.family)) out.who = "family";
     else if (said(INFER.date)) out.who = "date";
     else if (said(INFER.friends)) out.who = "friends";
     else if (said(INFER.solo)) out.who = "solo";
@@ -800,7 +805,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     else if (/\b(either|any kind of show|don'?t mind)\b/.test(lower) && (musical || play)) out.showType = "either";
 
     // Youngest child's age ("youngest is 6", "my 8-year-old", "kids 6 and 10", "2 kids (8 and 12)", "ages 7, 9").
-    if (out.who === "family") {
+    if (out.who === "kids") {
       const ages = [];
       for (const m of lower.matchAll(/\b(\d{1,2})[- ](?:year[- ]old|yo|yr[- ]old)s?\b/g)) ages.push(Number(m[1]));
       for (const m of lower.matchAll(/\b(?:youngest|kids?|children|sons?|daughters?|ages?|aged|boys|girls)\b[^.\d$]{0,14}(\d{1,2})((?:\s*(?:,|and|&)\s*\d{1,2})*)/g))
@@ -868,7 +873,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
 
   // ---------------------------------------------------------------- state
   const BUDGETS = [[75, "Under $75"], [150, "Under $150"], [250, "Under $250"], [null, "Any price"]];
-  const WHO = [["unsure", "Not sure", "unsure"], ["solo", "Solo", "solo"], ["date", "Date night", "date"], ["friends", "Friends", "friends"], ["family", "Family", "family"]];
+  const WHO = [["unsure", "Not sure", "unsure"], ["solo", "Solo", "solo"], ["date", "Date night", "date"], ["friends", "Friends", "friends"], ["family", "Family", "family"], ["kids", "Taking kids", "kids"]];
   const MOOD = [["surprise", "Surprise me", "different"], ["laugh", "Laugh", "laugh"], ["cry", "Cry", "cry"], ["be wowed", "Be wowed", "wow"], ["sing along", "Sing along", "sing"]];
   const TYPE = [["musical", "Musical", "sing"], ["play", "Play", "masks"], ["either", "Either", "either"]];
   const RULES = [["jukebox", "No jukebox musicals"], ["adult content", "No crude or sexual content"], ["adult themes", "No adult themes"], ["long runtime", "Under 2h15"], ["loud effects", "Not too loud"], ["no intermission", "No intermission"]];
@@ -879,6 +884,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     solo: '<circle cx="12" cy="8" r="3.4"/><path d="M5.500 20c.8-4 3.400-6 6.500-6s5.700 2 6.500 6"/>',
     date: '<path d="M12 20s-7.500-4.600-7.500-10A4.200 4.200 0 0 1 12 7.600 4.200 4.200 0 0 1 19.500 10c0 5.400-7.500 10-7.500 10z"/>',
     friends: '<circle cx="12" cy="8" r="2.600"/><circle cx="5.500" cy="10" r="2.100"/><circle cx="18.500" cy="10" r="2.100"/><path d="M7.800 19c.5-3 2.100-4.600 4.200-4.600s3.700 1.600 4.200 4.600M2 18c.3-2.200 1.500-3.400 3.500-3.600M22 18c-.3-2.200-1.500-3.400-3.500-3.600"/>',
+    kids: '<circle cx="9" cy="6.500" r="2.500"/><circle cx="16.500" cy="10.500" r="1.800"/><path d="M4.500 20c.4-3.800 2-5.800 4.500-5.800s4.100 2 4.500 5.800M13.500 20c.3-2.300 1.300-3.600 3-3.600s2.700 1.300 3 3.600M5 11.500l-1.500 2M13 11.500l1.500 2"/>',
     family: '<circle cx="8" cy="7.500" r="2.800"/><circle cx="17" cy="11" r="2"/><path d="M3 20c.6-4.200 2.400-6.200 5-6.200s4.400 2 5 6.200M14 20c.3-2.600 1.500-4 3-4s2.700 1.400 3 4"/>',
     laugh: '<circle cx="12" cy="12" r="8.500"/><path d="M8 13.500c1 2.200 2.400 3.200 4 3.200s3-1 4-3.200zM9 9.500h.01M15 9.500h.01"/>',
     cry: '<path d="M12 3.500c3 4 5.500 6.600 5.500 9.600a5.500 5.500 0 0 1-11 0c0-3 2.500-5.600 5.500-9.600z"/>',
@@ -896,7 +902,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   // Each example is a description; picking one fills the text box and the questions are read from it.
   const PRESETS = [
     ["Date night, $150 max", "Date night with my partner. Something romantic that might make us cry, a musical, $150 max per ticket."],
-    ["Family, youngest is 6", "Taking the kids, the youngest is 6. We want a musical that will wow them, and any price is fine."],
+    ["Kids, youngest is 6", "Taking the kids, the youngest is 6. We want a musical that will wow them, and any price is fine."],
     ["Big laughs, no jukebox", "Night out with friends. We want to laugh, a musical or a play is fine, no jukebox musicals, under $150."],
     ["First time, nothing too long", "My first Broadway show, and I am going on my own, so nothing too long. Surprise me with a play, around $120."],
   ];
@@ -952,7 +958,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     state.autoRules.filter((r) => !want.includes(r)).forEach((r) => { state.rules = state.rules.filter((x) => x !== r); });
     state.autoRules = state.autoRules.filter((r) => want.includes(r));
     want.forEach((r) => { if (!state.rules.includes(r)) { state.rules.push(r); state.autoRules.push(r); filled.push("rule:" + r); } });
-    if (state.who !== "family" && state.auto.has("age")) { state.age = null; state.auto.delete("age"); }
+    if (state.who !== "kids" && state.auto.has("age")) { state.age = null; state.auto.delete("age"); }
     if (filled.length) track("answers_prefilled", { fields: filled });
   }
 
@@ -969,7 +975,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     document.querySelectorAll('input[name="first"]').forEach((i) => { i.checked = state.first === "both" || state.first === i.value; });
     document.querySelectorAll('input[name="rules"]').forEach((i) => { i.checked = state.rules.includes(i.value); });
     if ($("text").value !== state.text) $("text").value = state.text;
-    $("ageWrap").hidden = state.who !== "family";
+    $("ageWrap").hidden = state.who !== "kids";
     $("ageOut").textContent = ageText();
     if (typeof state.budget === "number") $("budgetRange").value = state.budget;
     $("budgetOut").textContent = budgetText();
@@ -1265,7 +1271,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     [/adult themes/i, "adult themes"], [/adult content/i, "crude or sexual content"],
     [/runs about|runtime|long/i, "too long"], [/loud/i, "loud"], [/intermission/i, "have an intermission"]];
   function ruledOut(input) {
-    const limits = { maxPrice: input.maxPrice, kidsAges: input.who === "family" ? R.parseAges(input.kidsAges) : [], dealbreakers: input.dealbreakers, showType: input.showType };
+    const limits = { maxPrice: input.maxPrice, kidsAges: input.who === "kids" ? R.parseAges(input.kidsAges) : [], dealbreakers: input.dealbreakers, showType: input.showType };
     const counts = new Map(); let total = 0;
     for (const s of SHOWS) {
       const v = R.violations(s, limits); if (!v.length) continue; total++;
@@ -1337,7 +1343,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     else track("question_answered", { question: t.name, value: t.name === "budget" && t.value !== "any" ? Number(t.value) : t.value });
     if (t.name === "rules") state.autoRules = [];
     else state.auto.delete(t.name);
-    if (t.name === "who") { state.who = t.value; $("ageWrap").hidden = state.who !== "family"; if (state.who !== "family") { state.age = null; $("ageOut").textContent = ageText(); } }
+    if (t.name === "who") { state.who = t.value; $("ageWrap").hidden = state.who !== "kids"; if (state.who !== "kids") { state.age = null; $("ageOut").textContent = ageText(); } }
     else if (t.name === "mood") state.mood = t.value;
     else if (t.name === "type") state.type = t.value;
     else if (t.name === "budget") { state.budget = t.value === "any" ? null : Number(t.value); if (state.budget !== null) $("budgetRange").value = state.budget; $("budgetOut").textContent = budgetText(); }
