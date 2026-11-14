@@ -5,9 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Broadway Concierge · Building with AI (Fall 2026)</title>
 
-  <!-- Week 1: create your PostHog account only.
-       Build 2: paste your project's current PostHog web snippet here,
-       then install analytics in the local app and verify events. -->
+  <!-- PostHog analytics (US cloud). The project token is public by design: it can only send events.
+       This page is hand-written HTML with no build step, so the token sits here; the web app reads it from .env. -->
+  <script>
+    (function (d, w, token, host) {
+      if (w.posthog && w.posthog.__loaded) return;
+      var ph = w.posthog = w.posthog || [];
+      if (ph.__SV) return;
+      ph._i = [];
+      ph.init = function (k, c, n) { ph._i.push([k, c, n]); };
+      ["capture", "identify", "reset", "register", "register_once", "opt_out_capturing", "opt_in_capturing"].forEach(function (m) {
+        ph[m] = function () { ph.push([m].concat(Array.prototype.slice.call(arguments))); };
+      });
+      ph.__SV = 1;
+      var s = d.createElement("script");
+      s.async = true; s.crossOrigin = "anonymous";
+      s.src = host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js";
+      d.head.appendChild(s);
+      ph.init(token, { api_host: host, defaults: "2026-08-30" });
+    })(document, window, "phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc", "https://us.i.posthog.com");
+  </script>
 
   <style>
     :root {
