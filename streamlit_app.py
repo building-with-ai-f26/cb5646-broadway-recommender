@@ -1,9 +1,18 @@
 """Broadway Concierge - show recommender web page. Run with: streamlit run streamlit_app.py"""
 import streamlit as st
 
+import time
+
+from analytics import new_visitor_id, track
 from app import DEALBREAKERS, LONG_RUNTIME_MIN, recommend_shows
 
 st.set_page_config(page_title="Broadway Concierge", page_icon="🎭")
+
+if "visitor" not in st.session_state:
+    st.session_state.visitor = new_visitor_id()
+    st.session_state.started = time.time()
+    st.session_state.shown_once = False
+    track(st.session_state.visitor, "app_opened")
 
 st.title("🎭 Broadway Concierge")
 st.write("Tell us about your night and get 3 Broadway shows that fit your group, mood and budget.")
@@ -36,6 +45,7 @@ with col2:
 if st.button("Find my shows", type="primary"):
     if not text.strip():
         st.warning("Write a sentence or two about your night first.")
+        track(st.session_state.visitor, "find_clicked_empty")
         st.stop()
     with st.spinner("Picking your shows..."):
         try:
@@ -50,10 +60,24 @@ if st.button("Find my shows", type="primary"):
             )
         except RuntimeError as e:  # missing API key
             st.error(str(e))
+            track(st.session_state.visitor, "recommend_failed", reason="missing_api_key")
             st.stop()
         except Exception as e:
             st.error(f"Something went wrong talking to the AI: {e}")
+            track(st.session_state.visitor, "recommend_failed", reason="error")
             st.stop()
+
+    first = not st.session_state.shown_once
+    st.session_state.shown_once = True
+    track(
+        st.session_state.visitor, "picks_shown",
+        who=who, mood=mood, max_price=max_price if max_price is not None else "any",
+        dealbreakers=list(dealbreakers), first_show=first_show,
+        has_kids_ages=bool(kids_ages.strip()), text_length=len(text.strip()),
+        picks=[p["title"] for p in result["picks"]],
+        near_misses=sum(1 for p in result["picks"] if not p["fits_all_limits"]),
+        seconds_to_first_picks=round(time.time() - st.session_state.started, 1) if first else None,
+    )
 
     if result["message"]:
         st.info(result["message"])

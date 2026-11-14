@@ -48,3 +48,6 @@ If your app needs API keys, use a local environment file such as `.env`. Keep pr
 The web app and product page send anonymous usage events to PostHog (US cloud). The app sends choices and counts only, never the text a person types. Events: `question_answered`, `quick_start_clicked`, `price_slider_used`, `picks_shown`, `different_picks_clicked`, `picks_copied`, `start_over_clicked`, plus automatic pageviews.
 
 To build the app with analytics, put `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` in `.env` (names are in `.env.example`) and run `python web/build.py`. With no token the app builds and runs normally and sends nothing. The project token is public by design; never use a personal API key (`phx_...`).
+
+### Streamlit app analytics
+`streamlit_app.py` also sends PostHog events from the server (`app_opened`, `picks_shown`, `find_clicked_empty`, `recommend_failed`) through `analytics.py`, using the same `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` from `.env`. Each browser session gets a random anonymous id. Typed text is never sent, only `text_length`. With no token set it does nothing.
