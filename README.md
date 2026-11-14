@@ -1,6 +1,6 @@
 # [Broadway Concierge]
 
-> **One-line pitch:** [Broadway Concierge helps first-time and budget-conscious theatergoers pick the right show for their group and spot ticket scams before they pay.]
+> **One-line pitch:** [Broadway Concierge helps new and experienced theatergoers find the right show for their group, matched to their taste, budget and schedule, and flags ticket scams before they pay.]
 
 - **Builder:** [Ciara Butler] (`@ciaralbutler`)
 - **Pod:** [Pod 13]
