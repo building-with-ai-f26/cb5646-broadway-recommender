@@ -195,9 +195,10 @@
     return `about ${t}${show.intermission ? "" : ", no intermission"}`;
   }
 
-  /** A family night with no kids' age entered: we assume everyone is 18 or older. */
-  function familyAllAdults(input) {
-    return input.who === "family" && !parseAges(input.kidsAges).length;
+  // Who is going: "family" means adults only (18+); "kids" means children are coming.
+  /** Kids are coming but no age was entered. */
+  function kidsWithoutAge(input) {
+    return input.who === "kids" && !parseAges(input.kidsAges).length;
   }
 
   /** Score one eligible show for this person. Returns {score, reasons}. */
@@ -215,14 +216,16 @@
     for (const mm of ctx.moods) {
       if (mm !== mood && (show.moods || []).includes(mm)) score += 1.5;
     }
-    if (input.who && (show.groups || []).includes(input.who)) {
+    // The catalog has no "kids" group; shows that work for families are the ones for kids too.
+    if (input.who && (show.groups || []).includes(input.who === "kids" ? "family" : input.who)) {
       score += 2;
       const who = { solo: "Works well on your own", date: "Good for a date", friends: "Good for a group of friends",
-        family: input.kidsAges && parseAges(input.kidsAges).length ? "Works for a family with kids" : "Good for a family outing" };
+        family: "Good for a family outing", kids: "Works for a night out with kids" };
       reasons.push(who[input.who]);
     }
-    // Kid-friendly shows only get a boost when a kid's age was given; otherwise the family is all adults.
-    if (input.who === "family" && !familyAllAdults(input) && hasTag(show, ["family-friendly"])) score += 2;
+    if (input.who === "kids" && hasTag(show, ["family-friendly"])) score += 2;
+    // Kids are coming but no age was given: lean away from shows meant for teens and up.
+    if (kidsWithoutAge(input) && minAge(show) >= 13) score -= 4;
     if (input.firstShow === true) {
       if (show.first_timer) {
         score += 2;
@@ -292,7 +295,7 @@
   // ------------------------------------------------------------ the recommender
 
   function prepare(shows, input) {
-    const ages = input.who === "family" ? parseAges(input.kidsAges) : [];
+    const ages = input.who === "kids" ? parseAges(input.kidsAges) : [];
     const limits = { maxPrice: input.maxPrice || null, kidsAges: ages, dealbreakers: input.dealbreakers || [], showType: input.showType || null };
     const ctx = analyzeText(input.text, shows);
     const eligible = shows.filter((s) => !violations(s, limits).length);
@@ -307,8 +310,8 @@
     if (!input.mood && !ctx.moods.size && !ctx.likes.length) notes.push("No mood or taste given, so I ranked by group, first-timer fit and budget.");
     if (ctx.dislikes.length) notes.push("Treated these as dislikes from your text: " + joinList(ctx.dislikes.map((t) => t.name)) + ".");
     if (ctx.loved.length) notes.push("Assumed you have already seen " + joinList(ctx.loved.map((s) => s.title)) + ".");
-    if (familyAllAdults(input))
-      notes.push("No kid's age given, so I assumed everyone in your family is 18 or older. Set the youngest child's age if kids are coming.");
+    if (kidsWithoutAge(input))
+      notes.push("No age given for the kids, so I favored shows for school-age kids. Set the youngest age to apply a hard age limit.");
     return notes.join(" ");
   }
 
@@ -373,7 +376,7 @@
       return rest;
     });
     const details = {
-      who_is_going: input.who || "not said",
+      who_is_going: { family: "adult family members, all 18 or older", kids: "a group with children under 18" }[input.who] || input.who || "not said",
       kids_ages: parseAges(input.kidsAges).length ? parseAges(input.kidsAges) : "not said",
       mood: input.mood || "not said",
       max_price_per_ticket: input.maxPrice || "no limit",
@@ -434,7 +437,8 @@
    * The same patterns live in app.py (infer_answers); tests/infer_cases.json keeps the two in step.
    */
   const INFER = {
-    family: /\b(kids?|children|child|sons?|daughters?|my boys|my girls|grand(?:kids?|sons?|daughters?|children|ma|pa|mother|father|parents)|nieces?|nephews?|family|mom|mum|mother|dad|father|parents|sisters?|brothers?|siblings?|cousins?|aunt|uncle|in-laws|toddlers?|teens?|teenagers?|tweens?|\d{1,2}[- ]year[- ]olds?)\b/,
+    kids: /\b(kids?|children|child|sons?|daughters?|(?:my|our|the|two|three|four|\d) (?:little )?(?:boys|girls)(?!'? ?(?:night|trip|weekend))|grand(?:kids?|sons?|daughters?|children)|nieces?|nephews?|toddlers?|teens?|teenagers?|tweens?|\d{1,2}[- ]year[- ]olds?)\b/,
+    family: /\b(family|mom|mum|mother|dad|father|parents|sisters?|brothers?|siblings?|cousins?|aunt|uncle|in-laws|grand(?:ma|pa|mother|father|parents))\b/,
     date: /\b(date|dates|anniversary|wife|husband|partner|girlfriend|boyfriend|fianc[eé]e?|spouse|honeymoon|valentine'?s?|romantic (?:evening|night)|couple)\b/,
     friends: /\b(friends?|bff|besties?|best friend|buddies|pals|girls'? (?:night|trip|weekend)|guys'? (?:night|trip|weekend)|bachelorette|bachelor|coworkers?|co-workers?|colleagues|work (?:outing|team)|team outing|a group|our group|group of|roommates?|classmates?)\b/,
     solo: /\b(solo|alone|by myself|on my own|just me|myself|treating myself|table for one)\b/,
@@ -464,8 +468,10 @@
     const out = {};
     const said = (re) => { const m = re.exec(lower); return m && !negativeBefore(lower, m.index) ? m : null; };
 
-    // Who is going. Kids win over a partner ("my wife and our kids" is a family night).
-    if (said(INFER.family)) out.who = "family";
+    // Who is going. Kids win over everything ("my wife and our kids" is a night out with kids);
+    // adult relatives ("my mom", "my sister") mean a family outing, which is adults only.
+    if (said(INFER.kids)) out.who = "kids";
+    else if (said(INFER.family)) out.who = "family";
     else if (said(INFER.date)) out.who = "date";
     else if (said(INFER.friends)) out.who = "friends";
     else if (said(INFER.solo)) out.who = "solo";
@@ -491,7 +497,7 @@
     else if (/\b(either|any kind of show|don'?t mind)\b/.test(lower) && (musical || play)) out.showType = "either";
 
     // Youngest child's age ("youngest is 6", "my 8-year-old", "kids 6 and 10", "2 kids (8 and 12)", "ages 7, 9").
-    if (out.who === "family") {
+    if (out.who === "kids") {
       const ages = [];
       for (const m of lower.matchAll(/\b(\d{1,2})[- ](?:year[- ]old|yo|yr[- ]old)s?\b/g)) ages.push(Number(m[1]));
       for (const m of lower.matchAll(/\b(?:youngest|kids?|children|sons?|daughters?|ages?|aged|boys|girls)\b[^.\d$]{0,14}(\d{1,2})((?:\s*(?:,|and|&)\s*\d{1,2})*)/g))

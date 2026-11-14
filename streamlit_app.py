@@ -82,11 +82,12 @@ else:
 
 col1, col2 = st.columns(2)
 with col1:
-    who = st.selectbox("Who's going?", ["(not sure)", "solo", "date", "friends", "family"], key="who",
+    who = st.selectbox("Who's going?", ["(not sure)", "solo", "date", "friends", "family", "kids"], key="who",
+                       format_func=lambda w: {"family": "family (adults only)", "kids": "taking kids"}.get(w, w),
                        on_change=mark_manual, args=("who",))
     kids_ages = ""
-    if who == "family":
-        kids_ages = st.text_input("Kids' ages (if any)", placeholder="e.g. 6, 10. Leave blank if everyone is 18+", key="kids_ages",
+    if who == "kids":
+        kids_ages = st.text_input("Kids' ages (if any)", placeholder="e.g. 6, 10", key="kids_ages",
                                   on_change=mark_manual, args=("kids_ages",))
     mood = st.selectbox("Mood", ["(any)", "laugh", "cry", "be wowed", "sing along", "something different"], key="mood",
                         on_change=mark_manual, args=("mood",))
