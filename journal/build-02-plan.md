@@ -28,10 +28,10 @@ Optional working notes. Publish your required build log on `docs/index.html`; no
 - **How you diagnosed and fixed (or rolled back) them:** 
 
 ## 5. What it cost
-- **Agent / Token spend this week:** `$___`
-- **Hosting / API runtime spend this week:** `$___`
-- **Your hours spent this week:** `___ hrs`
-- **Cumulative project spend to date:** `$___`
+- **Agent / Token spend this week:** `$0 incremental` (same Claude subscription already counted in Build 1)
+- **Hosting / API runtime spend this week:** `$0` (Claude API not run live yet; PostHog free tier; GitHub Pages free)
+- **Your hours spent this week:** `4 hrs`
+- **Cumulative project spend to date:** `$21.78`
 
 ## 6. Pod Critique Sign-off
 - **Tested by podmate(s):** 
