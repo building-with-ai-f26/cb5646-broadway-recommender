@@ -162,6 +162,32 @@ const sloppyAi = async () =>
     const a = R.recommendLocal(SHOWS, inp), b = R.recommendLocal(SHOWS, inp, { offset: 3 });
     assert.deepStrictEqual(a.picks.map((p) => p.title), b.picks.map((p) => p.title));
   });
+  check("show type: 'play' keeps only plays, 'musical' only musicals", () => {
+    for (const t of ["play", "musical"]) {
+      const r = R.recommendLocal(SHOWS, { ...base, showType: t });
+      assert.ok(r.picks.every((p) => BY_TITLE[p.title].genre === t), t);
+      assert.strictEqual(r.eligibleCount, SHOWS.filter((s) => s.genre === t).length);
+    }
+  });
+  check("under 2h15: nothing longer than 135 minutes", () => {
+    const r = R.recommendLocal(SHOWS, { ...base, dealbreakers: ["long runtime"] });
+    assert.ok(r.picks.every((p) => BY_TITLE[p.title].runtime_min <= 135));
+    assert.ok(R.violations(BY_TITLE["Just in Time"], { dealbreakers: ["long runtime"] }).length === 0);
+    assert.ok(R.violations(BY_TITLE["Wicked"], { dealbreakers: ["long runtime"] }).length === 1);
+  });
+  check("adult themes: rules out death/violence shows, keeps light ones", () => {
+    assert.ok(R.violations(BY_TITLE["Hamilton"], { dealbreakers: ["adult themes"] }).length === 1);
+    assert.ok(R.violations(BY_TITLE["Wicked"], { dealbreakers: ["adult themes"] }).length === 0);
+  });
+  check("inferAnswers: fills who, mood, type and price from a description", () => {
+    assert.deepStrictEqual(R.inferAnswers("Date night with my wife, something that might make us cry, a musical, $150 max."),
+      { who: "date", mood: "cry", showType: "musical", budget: 150 });
+    const fam = R.inferAnswers("Taking the kids, the youngest is 6. Any price is fine, we want to be wowed.");
+    assert.strictEqual(fam.who, "family"); assert.strictEqual(fam.age, 6); assert.strictEqual(fam.budget, null); assert.strictEqual(fam.mood, "be wowed");
+    assert.strictEqual(R.inferAnswers("I hate musicals, give me a play").showType, "play");
+    assert.strictEqual(R.inferAnswers("Not a musical please").showType, "play");
+    assert.deepStrictEqual(R.inferAnswers("something nice"), {});
+  });
   check("catalog sanity: 34 shows, unique titles, price_low <= price_high", () => {
     assert.strictEqual(SHOWS.length, 34);
     assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 34);

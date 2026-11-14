@@ -157,6 +157,10 @@ button.line:hover { background: var(--accent-soft); }
 .req { display: inline-block; margin-left: 8px; padding: 1px 8px; border: 1px solid var(--accent); border-radius: 6px; color: var(--accent); font: 600 .74rem/1.5 var(--font-body); vertical-align: .12em; }
 .req.opt { border-color: var(--line); color: var(--muted); }
 .req.done { border-color: var(--go); color: var(--go); }
+.req.auto { border-color: var(--gold, #e0a01a); color: var(--ink); background: var(--accent-soft); }
+.quickstart { display: grid; gap: 14px; }
+.quickstart > .label { margin-bottom: 0; }
+.or { color: var(--muted); font-size: .92rem; font-weight: 600; margin: 2px 0 -6px; }
 .slider { margin-top: 14px; }
 .slider label { display: block; font-weight: 600; font-size: .95rem; }
 .slider-row { display: flex; align-items: center; gap: 14px; min-height: 44px; }
@@ -200,7 +204,7 @@ button.line:hover { background: var(--accent-soft); }
   <header class="marquee">
     <span class="bulbs-alt" aria-hidden="true"></span>
     <h1>Broadway <em>Concierge</em></h1>
-    <p>Answer three quick questions. Get three shows that fit your night.</p>
+    <p>Answer four quick questions. Get three shows that fit your night.</p>
   </header>
 
   <main class="app">
@@ -210,12 +214,15 @@ button.line:hover { background: var(--accent-soft); }
         <button type="button" class="linkbtn" id="reset">Start over</button>
       </div>
 
-      <div class="qs">
-        <label class="label" for="text">Quick start: describe your night</label>
-        <textarea id="text" placeholder="Taking my mom for her birthday. We loved Wicked and want to laugh."></textarea>
-        <p class="hint">Optional. Say what you loved or can't stand. The picks update after you stop typing.</p>
+      <div class="quickstart">
+        <span class="label">Quick start</span>
+        <div class="quick" id="quick" role="group" aria-label="Examples"></div>
+        <div class="qs">
+          <label class="or" for="text">Or, describe your night</label>
+          <textarea id="text" placeholder="Taking my mom for her birthday. She loved Wicked, we want to laugh, and $150 a ticket is our max."></textarea>
+          <p class="hint">Optional. We fill in the questions below from what you write, and you can change any of them. Say what you loved or can't stand, too.</p>
+        </div>
       </div>
-      <div class="quick" id="quick"><p>Or start from an example</p></div>
 
       <fieldset>
         <legend>Who is going? <span class="req" data-req="who">Required</span></legend>
@@ -237,6 +244,11 @@ button.line:hover { background: var(--accent-soft); }
       </fieldset>
 
       <fieldset>
+        <legend>Musical or play? <span class="req" data-req="type">Required</span></legend>
+        <div class="tiles tile" id="type"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Most you will pay per ticket <span class="req" data-req="budget">Required</span></legend>
         <div class="pills" id="budget"></div>
         <div class="slider">
@@ -251,12 +263,13 @@ button.line:hover { background: var(--accent-soft); }
       <fieldset>
         <legend>Been to Broadway before? <span class="req opt">Optional</span></legend>
         <div class="pills" id="first"></div>
+        <p class="hint">Pick both if your group is a mix. Shows that are easy for newcomers rank higher when anyone is new.</p>
       </fieldset>
 
       <fieldset>
         <legend>Rule out <span class="req opt">Optional</span></legend>
         <div class="pills" id="rules"></div>
-        <p class="hint">"Under 2h45" drops the longest shows. "No intermission" keeps only shows that run straight through.</p>
+        <p class="hint">"Under 2h15" drops shows longer than 2 hours 15 minutes. "No adult themes" drops shows with death, violence, abuse or war in them. "No intermission" keeps only shows that run straight through.</p>
       </fieldset>
     </form>
 
@@ -267,7 +280,7 @@ button.line:hover { background: var(--accent-soft); }
         <p class="ruled" id="ruled" hidden></p>
       </div>
       <div class="empty" id="empty">
-        <p>Answer three quick questions and your picks will appear here.</p>
+        <p>Answer four quick questions and your picks will appear here.</p>
         <ul class="todo" id="todo"></ul>
       </div>
       <p class="sr-only" id="status" role="status"></p>
@@ -307,8 +320,11 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.Recommender = factory();
 })(typeof self !== "undefined" ? self : this, function () {
-  const DEALBREAKERS = ["jukebox", "adult content", "long runtime", "loud effects", "no intermission"];
-  const LONG_RUNTIME_MIN = 165; // 2h45m or longer counts as "long"
+  const DEALBREAKERS = ["jukebox", "adult content", "adult themes", "long runtime", "loud effects", "no intermission"];
+  const LONG_RUNTIME_MIN = 136; // longer than 2h15m counts as "long"
+  const SHOW_TYPES = ["musical", "play"]; // anything else (or nothing) means "either"
+  // Content notes that count as adult themes: death, violence, abuse, war, addiction and similar.
+  const ADULT_THEMES = /dark themes|adult themes|death|murder|suicide|violence|blood|war themes|military|abuse|holocaust|disturbing|grief|bullying|drinking|affair/;
   const SHORTLIST_FOR_AI = 10;
 
   // ------------------------------------------------------------ hard rules (plain code)
@@ -324,8 +340,10 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
 
   /** Reasons this show breaks the person's hard limits (empty list = it fits). */
   function violations(show, limits) {
-    const { maxPrice, kidsAges, dealbreakers } = limits || {};
+    const { maxPrice, kidsAges, dealbreakers, showType } = limits || {};
     const out = [];
+    if (SHOW_TYPES.includes(showType) && show.genre !== showType)
+      out.push(`it's a ${show.genre}, not a ${showType}`);
     if (maxPrice && show.price_low > maxPrice)
       out.push(`cheapest tickets are about $${show.price_low}, over your $${maxPrice} max`);
     if (kidsAges && kidsAges.length && Math.min(...kidsAges) < minAge(show))
@@ -337,6 +355,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
       else if (d === "adult content" &&
         (minAge(show) >= 17 || ["profanity", "crude", "sexual", "explicit"].some((w) => warnings.includes(w))))
         out.push("it has adult content");
+      else if (d === "adult themes" && ADULT_THEMES.test(warnings)) out.push("it has adult themes");
       else if (d === "long runtime" && show.runtime_min >= LONG_RUNTIME_MIN)
         out.push(`it runs about ${show.runtime_min} minutes`);
       else if (d === "loud effects" && warnings.includes("loud")) out.push("it has loud effects");
@@ -583,7 +602,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
 
   function prepare(shows, input) {
     const ages = input.who === "family" ? parseAges(input.kidsAges) : [];
-    const limits = { maxPrice: input.maxPrice || null, kidsAges: ages, dealbreakers: input.dealbreakers || [] };
+    const limits = { maxPrice: input.maxPrice || null, kidsAges: ages, dealbreakers: input.dealbreakers || [], showType: input.showType || null };
     const ctx = analyzeText(input.text, shows);
     const eligible = shows.filter((s) => !violations(s, limits).length);
     const ranked = eligible
@@ -667,6 +686,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
       kids_ages: parseAges(input.kidsAges).length ? parseAges(input.kidsAges) : "not said",
       mood: input.mood || "not said",
       max_price_per_ticket: input.maxPrice || "no limit",
+      show_type: input.showType || "either",
       dealbreakers: input.dealbreakers || [],
       first_broadway_show: input.firstShow === null || input.firstShow === undefined ? "not said" : input.firstShow,
     };
@@ -714,8 +734,73 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     return { picks, assumptions, message, source: "claude", eligibleCount: prepared.eligible.length, offset: 0 };
   }
 
+  // ------------------------------------------------------------ pre-filling the form from free text
+
+  /**
+   * Read a description like "Date night with my wife, something funny, under $150" and guess the
+   * form answers. Returns only what the text clearly says: { who, mood, budget, showType, age, first, rules }.
+   * budget: a number, or null for "any price". Anything not mentioned is left out.
+   */
+  function inferAnswers(text) {
+    const raw = String(text || "");
+    const lower = raw.toLowerCase();
+    const out = {};
+    const said = (re) => { const m = re.exec(lower); return m && !negativeBefore(lower, m.index) ? m : null; };
+
+    // Who is going. Kids win over a partner ("my wife and our kids" is a family night).
+    if (said(/\b(kids?|children|son|daughter|my boys|my girls|grand(?:kids?|son|daughter|children)|nieces?|nephews?|family|my (?:mom|mum|mother|dad|father|parents)|toddler|teens?|\d{1,2}[- ]year[- ]olds?)\b/))
+      out.who = "family";
+    else if (said(/\b(date|anniversary|my (?:wife|husband|partner|girlfriend|boyfriend|fianc[eé]e?|spouse)|romantic evening|couple)\b/))
+      out.who = "date";
+    else if (said(/\b(friends?|girls'? (?:night|trip)|guys'? (?:night|trip)|bachelorette|bachelor|coworkers?|colleagues|a group|our group|roommates?)\b/))
+      out.who = "friends";
+    else if (said(/\b(solo|alone|by myself|on my own|just me|myself)\b/))
+      out.who = "solo";
+
+    // Mood.
+    if (said(/\b(laugh|laughs|funny|comedy|hilarious|silly|lighthearted|light-hearted)\b/)) out.mood = "laugh";
+    else if (said(/\b(cry|tears|tearjerker|emotional|moving|heartfelt|sob)\b/)) out.mood = "cry";
+    else if (said(/\b(wow|wowed|spectacle|dazzl\w*|jaw-dropping|special effects|magic|big production)\b/)) out.mood = "be wowed";
+    else if (said(/\b(sing along|sing-along|singalong|songs? we know|catchy|dance music|know the songs)\b/)) out.mood = "sing along";
+    else if (said(/\b(surprise me|something different|unusual|weird|offbeat|edgy|anything)\b/)) out.mood = "surprise";
+
+    // Price per ticket.
+    const money = /(?:\$\s?(\d{2,4})|(\d{2,4})\s?(?:dollars|bucks|usd))/.exec(lower);
+    if (money) out.budget = Math.max(40, Math.min(400, Number(money[1] || money[2])));
+    else if (said(/\b(cheap|cheapest|on a budget|tight budget|budget-friendly|affordable|not too expensive)\b/)) out.budget = 75;
+    else if (/\b(money is no object|price doesn'?t matter|any price|no budget|splurge|whatever it costs|no limit)\b/.test(lower)) out.budget = null;
+
+    // Musical or play. "Not a musical" / "no singing" means a play.
+    const musical = /\bmusicals?\b/.exec(lower), play = /\b(?:straight )?plays?\b(?! along)/.exec(lower);
+    const noSinging = /\b(no singing|without singing|hate singing|don'?t want singing|not a musical|no musicals?)\b/.test(lower);
+    if (noSinging) out.showType = "play";
+    else if (musical && !negativeBefore(lower, musical.index) && !(play && !negativeBefore(lower, play.index))) out.showType = "musical";
+    else if (play && !negativeBefore(lower, play.index) && !(musical && !negativeBefore(lower, musical.index))) out.showType = "play";
+    else if (musical && play) out.showType = "either";
+
+    // Youngest child's age, if given ("youngest is 6", "my 8-year-old", "kids 6 and 10").
+    if (out.who === "family") {
+      const ages = [];
+      for (const m of lower.matchAll(/\b(\d{1,2})[- ](?:year[- ]old|yo|yr[- ]old)s?\b/g)) ages.push(Number(m[1]));
+      for (const m of lower.matchAll(/\b(?:youngest|kids?|children|son|daughter|ages?)\s+(?:is |are |aged? |of )?(\d{1,2})(?:\s*(?:,|and|&)\s*(\d{1,2}))*/g))
+        for (const n of m[0].match(/\d{1,2}/g)) ages.push(Number(n));
+      const kids = ages.filter((a) => a >= 1 && a <= 17);
+      if (kids.length) out.age = Math.min(...kids);
+    }
+
+    // Optional answers.
+    if (/\b(first (?:time|broadway|show)|never been|never seen a broadway)\b/.test(lower)) out.first = "yes";
+    const rules = [];
+    if (/\b(no|hate|not into|avoid|can'?t stand|nothing)\b[^.,;!?]{0,20}\bjukebox/.test(lower)) rules.push("jukebox");
+    if (/\b(nothing too long|not too long|short|under (?:two|2) hours|can'?t sit (?:still|long))\b/.test(lower)) rules.push("long runtime");
+    if (/\b(nothing (?:too )?loud|not too loud|quiet|sensitive to (?:noise|sound))\b/.test(lower)) rules.push("loud effects");
+    if (/\b(nothing (?:too )?dark|nothing heavy|no heavy|nothing sad|keep it light)\b/.test(lower)) rules.push("adult themes");
+    if (rules.length) out.rules = rules;
+    return out;
+  }
+
   return {
-    DEALBREAKERS, LONG_RUNTIME_MIN, minAge, parseAges, violations, closeness, priceText,
+    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, minAge, parseAges, violations, closeness, priceText,
     analyzeText, scoreShow, recommendLocal, recommendWithAI, buildAiPrompt, prepare, parseJson, runtimeText, previewsNote,
   };
 });
@@ -764,8 +849,10 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   const BUDGETS = [[75, "Under $75"], [150, "Under $150"], [250, "Under $250"], [null, "Any price"]];
   const WHO = [["unsure", "Not sure", "unsure"], ["solo", "Solo", "solo"], ["date", "Date night", "date"], ["friends", "Friends", "friends"], ["family", "Family", "family"]];
   const MOOD = [["surprise", "Surprise me", "different"], ["laugh", "Laugh", "laugh"], ["cry", "Cry", "cry"], ["be wowed", "Be wowed", "wow"], ["sing along", "Sing along", "sing"]];
-  const RULES = [["jukebox", "No jukebox musicals"], ["adult content", "Nothing adult"], ["long runtime", "Under 2h45"], ["loud effects", "Not too loud"], ["no intermission", "No intermission"]];
-  const FIRST = [["", "Either"], ["yes", "First time"], ["no", "Been before"]];
+  const TYPE = [["musical", "Musical", "sing"], ["play", "Play", "masks"], ["either", "Either", "either"]];
+  const RULES = [["jukebox", "No jukebox musicals"], ["adult content", "No crude or sexual content"], ["adult themes", "No adult themes"], ["long runtime", "Under 2h15"], ["loud effects", "Not too loud"], ["no intermission", "No intermission"]];
+  // Checkboxes, so a mixed group can pick both. state.first is "", "yes", "no" or "both".
+  const FIRST = [["yes", "First time"], ["no", "Been before"]];
   const ICONS = {
     unsure: '<circle cx="12" cy="12" r="8.5"/><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.400-1 .900-1 1.700M12 17h.01"/>',
     solo: '<circle cx="12" cy="8" r="3.4"/><path d="M5.500 20c.8-4 3.400-6 6.500-6s5.700 2 6.500 6"/>',
@@ -777,18 +864,22 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     wow: '<path d="M12 3l2.300 5.600L20 9.500l-4.300 3.800 1.300 5.700L12 15.800 7 19l1.300-5.700L4 9.500l5.700-.9z"/>',
     sing: '<path d="M9 18V6l10-2v12"/><circle cx="6.500" cy="18" r="2.500"/><circle cx="16.500" cy="16" r="2.500"/>',
     different: '<path d="M12 3l3 6 6 3-6 3-3 6-3-6-6-3 6-3z"/>',
+    masks: '<path d="M4 5c3 1.200 6 1.200 9 0v6a4.500 4.500 0 0 1-9 0z"/><path d="M6.300 8.500h.01M10.700 8.500h.01M6.500 12.200c.8.700 2.200.700 4 0"/><path d="M14.500 9.500c2 .6 3.800.6 5.500 0v5.500a4.200 4.200 0 0 1-7.600 2.400"/><path d="M15.800 12.500h.01M18.700 12.500h.01M15.700 16.300c.9-.8 2.200-.8 3.100 0"/>',
+    either: '<path d="M7 7h11l-3-3M17 17H6l3 3"/>',
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
 
-  // who, mood and budget start unset (undefined) because they are required; budget null means "any price".
-  const fresh = () => ({ who: undefined, mood: undefined, budget: undefined, age: null, first: "", rules: [], text: "" });
+  // who, mood, type and budget start unset (undefined) because they are required; budget null means "any price".
+  // `auto` lists answers filled in from the description; `autoRules` the rule-outs filled in that way.
+  const fresh = () => ({ who: undefined, mood: undefined, type: undefined, budget: undefined, age: null, first: "", rules: [], text: "", auto: new Set(), autoRules: [] });
+  // Each example is a description; picking one fills the text box and the questions are read from it.
   const PRESETS = [
-    ["Date night, $150 max", { who: "date", mood: "cry", budget: 150, age: null, first: "", rules: [], text: "" }],
-    ["Family, youngest is 6", { who: "family", mood: "be wowed", budget: null, age: 6, first: "", rules: [], text: "" }],
-    ["Big laughs, no jukebox", { who: "friends", mood: "laugh", budget: 150, age: null, first: "", rules: ["jukebox"], text: "" }],
-    ["First time, nothing too long", { who: "unsure", mood: "surprise", budget: 150, age: null, first: "yes", rules: ["long runtime"], text: "" }],
+    ["Date night, $150 max", "Date night with my partner. Something romantic that might make us cry, a musical, $150 max per ticket."],
+    ["Family, youngest is 6", "Taking the kids, the youngest is 6. We want a musical that will wow them, and any price is fine."],
+    ["Big laughs, no jukebox", "Night out with friends. We want to laugh, a musical or a play is fine, no jukebox musicals, under $150."],
+    ["First time, nothing too long", "My first Broadway show, and I am going on my own, so nothing too long. Surprise me with a play, around $120."],
   ];
-  const REQUIRED = [["who", "Who is going"], ["mood", "Mood"], ["budget", "Price per ticket"]];
+  const REQUIRED = [["who", "Who is going"], ["mood", "Mood"], ["type", "Musical or play"], ["budget", "Price per ticket"]];
   let state = fresh();
   let offset = 0;
   let lastResult = null;
@@ -812,14 +903,37 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   }
   optionGroup("who", "who", WHO, "radio", true, true);
   optionGroup("mood", "mood", MOOD, "radio", true, true);
+  optionGroup("type", "type", TYPE, "radio", true, true);
   optionGroup("budget", "budget", BUDGETS, "radio", false, true);
-  optionGroup("first", "first", FIRST, "radio", false);
+  optionGroup("first", "first", FIRST, "checkbox", false);
   optionGroup("rules", "rules", RULES, "checkbox", false);
-  PRESETS.forEach(([label, set]) => {
+  PRESETS.forEach(([label, text]) => {
     const b = el("button", "", label); b.type = "button";
-    b.addEventListener("click", () => { touch(); track("quick_start_clicked", { example: label }); state = { ...set, rules: [...set.rules] }; syncControls(); update(); });
+    b.addEventListener("click", () => {
+      touch(); track("quick_start_clicked", { example: label });
+      state = fresh(); state.text = text; applyInference(); syncControls(); update();
+    });
     $("quick").append(b);
   });
+
+  // Fill the questions from the description. Answers the person picked themselves are never overwritten;
+  // answers filled in earlier from the text are updated or cleared as the text changes.
+  const FILLABLE = [["who", "who"], ["mood", "mood"], ["type", "showType"], ["budget", "budget"], ["age", "age"], ["first", "first"]];
+  function applyInference() {
+    const got = R.inferAnswers(state.text), blank = fresh(), filled = [];
+    for (const [k, from] of FILLABLE) {
+      if (from in got && (state[k] === blank[k] || state.auto.has(k))) {
+        if (state[k] !== got[from]) filled.push(k);
+        state[k] = got[from]; state.auto.add(k);
+      } else if (!(from in got) && state.auto.has(k)) { state[k] = blank[k]; state.auto.delete(k); }
+    }
+    const want = got.rules || [];
+    state.autoRules.filter((r) => !want.includes(r)).forEach((r) => { state.rules = state.rules.filter((x) => x !== r); });
+    state.autoRules = state.autoRules.filter((r) => want.includes(r));
+    want.forEach((r) => { if (!state.rules.includes(r)) { state.rules.push(r); state.autoRules.push(r); filled.push("rule:" + r); } });
+    if (state.who !== "family" && state.auto.has("age")) { state.age = null; state.auto.delete("age"); }
+    if (filled.length) track("answers_prefilled", { fields: filled });
+  }
 
   function setRadio(name, value) {
     document.querySelectorAll(`input[name="${name}"]`).forEach((i) => { i.checked = i.value === value; });
@@ -829,10 +943,11 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   function syncControls() {
     setRadio("who", state.who);
     setRadio("mood", state.mood);
+    setRadio("type", state.type);
     setRadio("budget", state.budget === undefined ? "" : state.budget === null ? "any" : String(state.budget));
-    setRadio("first", state.first);
+    document.querySelectorAll('input[name="first"]').forEach((i) => { i.checked = state.first === "both" || state.first === i.value; });
     document.querySelectorAll('input[name="rules"]').forEach((i) => { i.checked = state.rules.includes(i.value); });
-    $("text").value = state.text;
+    if ($("text").value !== state.text) $("text").value = state.text;
     $("ageWrap").hidden = state.who !== "family";
     $("ageOut").textContent = ageText();
     if (typeof state.budget === "number") $("budgetRange").value = state.budget;
@@ -840,8 +955,9 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   }
   function refreshProgress() {
     REQUIRED.forEach(([k]) => {
-      const badge = document.querySelector(`[data-req="${k}"]`), ok = state[k] !== undefined;
-      badge.textContent = ok ? "Done" : "Required"; badge.classList.toggle("done", ok);
+      const badge = document.querySelector(`[data-req="${k}"]`), ok = state[k] !== undefined, auto = ok && state.auto.has(k);
+      badge.textContent = auto ? "From your description" : ok ? "Done" : "Required";
+      badge.classList.toggle("done", ok && !auto); badge.classList.toggle("auto", auto);
     });
     $("todo").replaceChildren(...REQUIRED.map(([k, label]) => {
       const ok = state[k] !== undefined, li = el("li", ok ? "done" : "");
@@ -853,8 +969,8 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   function toInput() {
     return {
       text: state.text.trim(), who: state.who === "unsure" ? null : state.who, kidsAges: state.age === null ? "" : String(state.age),
-      mood: state.mood === "surprise" ? null : state.mood, maxPrice: state.budget === undefined ? null : state.budget, dealbreakers: state.rules,
-      firstShow: { yes: true, no: false }[state.first] ?? null,
+      mood: state.mood === "surprise" ? null : state.mood, showType: state.type === "either" ? null : state.type, maxPrice: state.budget === undefined ? null : state.budget, dealbreakers: state.rules,
+      firstShow: { yes: true, both: true, no: false }[state.first] ?? null, // anyone new -> favor first-timer-friendly shows
     };
   }
 
@@ -1124,10 +1240,11 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     return art;
   }
 
-  const BUCKETS = [[/over your \$|budget|\$/i, "over budget"], [/ages?|kids/i, "too mature for your kids"], [/jukebox/i, "jukebox"], [/adult/i, "adult content"],
+  const BUCKETS = [[/not a musical/i, "plays"], [/not a play/i, "musicals"], [/over your \$|budget|\$/i, "over budget"], [/ages?|kids/i, "too mature for your kids"], [/jukebox/i, "jukebox"],
+    [/adult themes/i, "adult themes"], [/adult content/i, "crude or sexual content"],
     [/runs about|runtime|long/i, "too long"], [/loud/i, "loud"], [/intermission/i, "have an intermission"]];
   function ruledOut(input) {
-    const limits = { maxPrice: input.maxPrice, kidsAges: input.who === "family" ? R.parseAges(input.kidsAges) : [], dealbreakers: input.dealbreakers };
+    const limits = { maxPrice: input.maxPrice, kidsAges: input.who === "family" ? R.parseAges(input.kidsAges) : [], dealbreakers: input.dealbreakers, showType: input.showType };
     const counts = new Map(); let total = 0;
     for (const s of SHOWS) {
       const v = R.violations(s, limits); if (!v.length) continue; total++;
@@ -1164,7 +1281,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     if (key !== lastPicksKey) {
       lastPicksKey = key;
       const props = {
-        who: state.who, mood: state.mood, max_price: state.budget === null ? "any" : state.budget, rules: state.rules,
+        who: state.who, mood: state.mood, show_type: state.type, prefilled: [...state.auto], max_price: state.budget === null ? "any" : state.budget, rules: state.rules,
         been_before: state.first || "either", has_text: state.text.trim().length > 0, text_length: state.text.trim().length,
         picks: result.picks.map((p) => p.title), near_misses: result.picks.filter((p) => !p.fits_all_limits).length,
         eligible_count: result.eligibleCount, offset,
@@ -1195,22 +1312,29 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     const t = e.target; if (!t || !t.name) return;
     touch();
     if (t.name === "rules") track("question_answered", { question: "rules", value: [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value) });
+    else if (t.name === "first") track("question_answered", { question: "first", value: [...document.querySelectorAll('input[name="first"]:checked')].map((i) => i.value) });
     else track("question_answered", { question: t.name, value: t.name === "budget" && t.value !== "any" ? Number(t.value) : t.value });
+    if (t.name === "rules") state.autoRules = [];
+    else state.auto.delete(t.name);
     if (t.name === "who") { state.who = t.value; $("ageWrap").hidden = state.who !== "family"; if (state.who !== "family") { state.age = null; $("ageOut").textContent = ageText(); } }
     else if (t.name === "mood") state.mood = t.value;
+    else if (t.name === "type") state.type = t.value;
     else if (t.name === "budget") { state.budget = t.value === "any" ? null : Number(t.value); if (state.budget !== null) $("budgetRange").value = state.budget; $("budgetOut").textContent = budgetText(); }
-    else if (t.name === "first") state.first = t.value;
+    else if (t.name === "first") {
+      const on = [...document.querySelectorAll('input[name="first"]:checked')].map((i) => i.value);
+      state.first = on.length === 2 ? "both" : on[0] || "";
+    }
     else if (t.name === "rules") state.rules = [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value);
     update();
   });
-  $("text").addEventListener("input", () => { touch(); state.text = $("text").value; clearTimeout(typing); typing = setTimeout(update, 450); });
-  $("ageUp").addEventListener("click", () => { state.age = state.age === null ? 6 : Math.min(17, state.age + 1); $("ageOut").textContent = ageText(); update(); });
-  $("ageDown").addEventListener("click", () => { state.age = state.age === null || state.age <= 1 ? null : state.age - 1; $("ageOut").textContent = ageText(); update(); });
+  $("text").addEventListener("input", () => { touch(); state.text = $("text").value; clearTimeout(typing); typing = setTimeout(() => { applyInference(); syncControls(); update(); }, 450); });
+  $("ageUp").addEventListener("click", () => { state.auto.delete("age"); state.age = state.age === null ? 6 : Math.min(17, state.age + 1); $("ageOut").textContent = ageText(); update(); });
+  $("ageDown").addEventListener("click", () => { state.auto.delete("age"); state.age = state.age === null || state.age <= 1 ? null : state.age - 1; $("ageOut").textContent = ageText(); update(); });
   $("reset").addEventListener("click", () => { track("start_over_clicked"); state = fresh(); syncControls(); update(); });
   $("budgetRange").addEventListener("change", () => track("price_slider_used", { max_price: Number($("budgetRange").value) }));
   $("budgetRange").addEventListener("input", () => {
     touch();
-    state.budget = Number($("budgetRange").value); $("budgetOut").textContent = budgetText();
+    state.auto.delete("budget"); state.budget = Number($("budgetRange").value); $("budgetOut").textContent = budgetText();
     setRadio("budget", String(state.budget)); update();
   });
   $("more").addEventListener("click", () => { track("different_picks_clicked"); offset = (offset + 3) % (lastResult.eligibleCount || 3); update(true); $("picksTop").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); });

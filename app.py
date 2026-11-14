@@ -24,8 +24,11 @@ load_dotenv()  # reads ANTHROPIC_API_KEY from your local .env file (never commit
 DATA = Path(__file__).parent / "data"
 MODEL = os.getenv("MODEL", "claude-sonnet-5-5")
 
-DEALBREAKERS = ["jukebox", "adult content", "long runtime", "loud effects", "no intermission"]
-LONG_RUNTIME_MIN = 165  # 2h45m or longer counts as "long"
+DEALBREAKERS = ["jukebox", "adult content", "adult themes", "long runtime", "loud effects", "no intermission"]
+LONG_RUNTIME_MIN = 136  # longer than 2h15m counts as "long"
+SHOW_TYPES = ("musical", "play")  # anything else (or None) means "either"
+# Content notes that count as adult themes: death, violence, abuse, war, addiction and similar.
+ADULT_THEMES = re.compile(r"dark themes|adult themes|death|murder|suicide|violence|blood|war themes|military|abuse|holocaust|disturbing|grief|bullying|drinking|affair")
 
 _client = None
 
@@ -79,9 +82,11 @@ def parse_ages(text):
     return [int(n) for n in re.findall(r"\d+", text or "")]
 
 
-def violations(show, max_price=None, kids_ages=None, dealbreakers=None):
+def violations(show, max_price=None, kids_ages=None, dealbreakers=None, show_type=None):
     """Return a list of reasons this show breaks the person's hard limits (empty = fits)."""
     out = []
+    if show_type in SHOW_TYPES and show.get("genre") != show_type:
+        out.append(f"it's a {show.get('genre')}, not a {show_type}")
     if max_price and show["price_low"] > max_price:
         out.append(f"cheapest tickets are about ${show['price_low']}, over your ${max_price} max")
     if kids_ages and min(kids_ages) < min_age(show):
@@ -95,6 +100,8 @@ def violations(show, max_price=None, kids_ages=None, dealbreakers=None):
             min_age(show) >= 17 or any(w in warnings for w in ("profanity", "crude", "sexual", "explicit"))
         ):
             out.append("it has adult content")
+        elif d == "adult themes" and ADULT_THEMES.search(warnings):
+            out.append("it has adult themes")
         elif d == "long runtime" and show["runtime_min"] >= LONG_RUNTIME_MIN:
             out.append(f"it runs about {show['runtime_min']} minutes")
         elif d == "loud effects" and "loud" in warnings:
@@ -104,12 +111,12 @@ def violations(show, max_price=None, kids_ages=None, dealbreakers=None):
     return out
 
 
-def closeness(show, max_price=None, kids_ages=None, dealbreakers=None):
+def closeness(show, max_price=None, kids_ages=None, dealbreakers=None, show_type=None):
     """Sort key for near-misses: fewest broken rules first, then the smallest age gap
     and budget overage, then the cheapest."""
     age_gap = max(0, min_age(show) - min(kids_ages)) if kids_ages else 0
     over = max(0, show["price_low"] - max_price) if max_price else 0
-    return (len(violations(show, max_price, kids_ages, dealbreakers)), age_gap, over, show["price_low"])
+    return (len(violations(show, max_price, kids_ages, dealbreakers, show_type)), age_gap, over, show["price_low"])
 
 
 def price_text(show):
@@ -145,7 +152,7 @@ SYSTEM = (
 
 
 def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
-                    dealbreakers=None, first_show=None, client=None):
+                    dealbreakers=None, first_show=None, client=None, show_type=None):
     """Return {"picks": [...], "assumptions": str, "message": str}.
 
     Every pick has: title, theater, price_range, rush_or_lottery, why_it_fits, caution,
@@ -153,7 +160,8 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
     """
     shows = load_shows()
     ages = parse_ages(kids_ages) if who == "family" else []
-    limits = dict(max_price=max_price, kids_ages=ages, dealbreakers=dealbreakers)
+    limits = dict(max_price=max_price, kids_ages=ages, dealbreakers=dealbreakers,
+                  show_type=show_type if show_type in SHOW_TYPES else None)
 
     eligible = [s for s in shows if not violations(s, **limits)]
     want = min(3, len(eligible))
@@ -166,6 +174,7 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
             "kids_ages": ages or "not said",
             "mood": mood or "not said",
             "max_price_per_ticket": max_price or "no limit",
+            "show_type": show_type if show_type in SHOW_TYPES else "either",
             "dealbreakers": dealbreakers or [],
             "first_broadway_show": first_show if first_show is not None else "not said",
         }

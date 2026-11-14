@@ -13,8 +13,11 @@
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.Recommender = factory();
 })(typeof self !== "undefined" ? self : this, function () {
-  const DEALBREAKERS = ["jukebox", "adult content", "long runtime", "loud effects", "no intermission"];
-  const LONG_RUNTIME_MIN = 165; // 2h45m or longer counts as "long"
+  const DEALBREAKERS = ["jukebox", "adult content", "adult themes", "long runtime", "loud effects", "no intermission"];
+  const LONG_RUNTIME_MIN = 136; // longer than 2h15m counts as "long"
+  const SHOW_TYPES = ["musical", "play"]; // anything else (or nothing) means "either"
+  // Content notes that count as adult themes: death, violence, abuse, war, addiction and similar.
+  const ADULT_THEMES = /dark themes|adult themes|death|murder|suicide|violence|blood|war themes|military|abuse|holocaust|disturbing|grief|bullying|drinking|affair/;
   const SHORTLIST_FOR_AI = 10;
 
   // ------------------------------------------------------------ hard rules (plain code)
@@ -30,8 +33,10 @@
 
   /** Reasons this show breaks the person's hard limits (empty list = it fits). */
   function violations(show, limits) {
-    const { maxPrice, kidsAges, dealbreakers } = limits || {};
+    const { maxPrice, kidsAges, dealbreakers, showType } = limits || {};
     const out = [];
+    if (SHOW_TYPES.includes(showType) && show.genre !== showType)
+      out.push(`it's a ${show.genre}, not a ${showType}`);
     if (maxPrice && show.price_low > maxPrice)
       out.push(`cheapest tickets are about $${show.price_low}, over your $${maxPrice} max`);
     if (kidsAges && kidsAges.length && Math.min(...kidsAges) < minAge(show))
@@ -43,6 +48,7 @@
       else if (d === "adult content" &&
         (minAge(show) >= 17 || ["profanity", "crude", "sexual", "explicit"].some((w) => warnings.includes(w))))
         out.push("it has adult content");
+      else if (d === "adult themes" && ADULT_THEMES.test(warnings)) out.push("it has adult themes");
       else if (d === "long runtime" && show.runtime_min >= LONG_RUNTIME_MIN)
         out.push(`it runs about ${show.runtime_min} minutes`);
       else if (d === "loud effects" && warnings.includes("loud")) out.push("it has loud effects");
@@ -289,7 +295,7 @@
 
   function prepare(shows, input) {
     const ages = input.who === "family" ? parseAges(input.kidsAges) : [];
-    const limits = { maxPrice: input.maxPrice || null, kidsAges: ages, dealbreakers: input.dealbreakers || [] };
+    const limits = { maxPrice: input.maxPrice || null, kidsAges: ages, dealbreakers: input.dealbreakers || [], showType: input.showType || null };
     const ctx = analyzeText(input.text, shows);
     const eligible = shows.filter((s) => !violations(s, limits).length);
     const ranked = eligible
@@ -373,6 +379,7 @@
       kids_ages: parseAges(input.kidsAges).length ? parseAges(input.kidsAges) : "not said",
       mood: input.mood || "not said",
       max_price_per_ticket: input.maxPrice || "no limit",
+      show_type: input.showType || "either",
       dealbreakers: input.dealbreakers || [],
       first_broadway_show: input.firstShow === null || input.firstShow === undefined ? "not said" : input.firstShow,
     };
@@ -420,8 +427,73 @@
     return { picks, assumptions, message, source: "claude", eligibleCount: prepared.eligible.length, offset: 0 };
   }
 
+  // ------------------------------------------------------------ pre-filling the form from free text
+
+  /**
+   * Read a description like "Date night with my wife, something funny, under $150" and guess the
+   * form answers. Returns only what the text clearly says: { who, mood, budget, showType, age, first, rules }.
+   * budget: a number, or null for "any price". Anything not mentioned is left out.
+   */
+  function inferAnswers(text) {
+    const raw = String(text || "");
+    const lower = raw.toLowerCase();
+    const out = {};
+    const said = (re) => { const m = re.exec(lower); return m && !negativeBefore(lower, m.index) ? m : null; };
+
+    // Who is going. Kids win over a partner ("my wife and our kids" is a family night).
+    if (said(/\b(kids?|children|son|daughter|my boys|my girls|grand(?:kids?|son|daughter|children)|nieces?|nephews?|family|my (?:mom|mum|mother|dad|father|parents)|toddler|teens?|\d{1,2}[- ]year[- ]olds?)\b/))
+      out.who = "family";
+    else if (said(/\b(date|anniversary|my (?:wife|husband|partner|girlfriend|boyfriend|fianc[eé]e?|spouse)|romantic evening|couple)\b/))
+      out.who = "date";
+    else if (said(/\b(friends?|girls'? (?:night|trip)|guys'? (?:night|trip)|bachelorette|bachelor|coworkers?|colleagues|a group|our group|roommates?)\b/))
+      out.who = "friends";
+    else if (said(/\b(solo|alone|by myself|on my own|just me|myself)\b/))
+      out.who = "solo";
+
+    // Mood.
+    if (said(/\b(laugh|laughs|funny|comedy|hilarious|silly|lighthearted|light-hearted)\b/)) out.mood = "laugh";
+    else if (said(/\b(cry|tears|tearjerker|emotional|moving|heartfelt|sob)\b/)) out.mood = "cry";
+    else if (said(/\b(wow|wowed|spectacle|dazzl\w*|jaw-dropping|special effects|magic|big production)\b/)) out.mood = "be wowed";
+    else if (said(/\b(sing along|sing-along|singalong|songs? we know|catchy|dance music|know the songs)\b/)) out.mood = "sing along";
+    else if (said(/\b(surprise me|something different|unusual|weird|offbeat|edgy|anything)\b/)) out.mood = "surprise";
+
+    // Price per ticket.
+    const money = /(?:\$\s?(\d{2,4})|(\d{2,4})\s?(?:dollars|bucks|usd))/.exec(lower);
+    if (money) out.budget = Math.max(40, Math.min(400, Number(money[1] || money[2])));
+    else if (said(/\b(cheap|cheapest|on a budget|tight budget|budget-friendly|affordable|not too expensive)\b/)) out.budget = 75;
+    else if (/\b(money is no object|price doesn'?t matter|any price|no budget|splurge|whatever it costs|no limit)\b/.test(lower)) out.budget = null;
+
+    // Musical or play. "Not a musical" / "no singing" means a play.
+    const musical = /\bmusicals?\b/.exec(lower), play = /\b(?:straight )?plays?\b(?! along)/.exec(lower);
+    const noSinging = /\b(no singing|without singing|hate singing|don'?t want singing|not a musical|no musicals?)\b/.test(lower);
+    if (noSinging) out.showType = "play";
+    else if (musical && !negativeBefore(lower, musical.index) && !(play && !negativeBefore(lower, play.index))) out.showType = "musical";
+    else if (play && !negativeBefore(lower, play.index) && !(musical && !negativeBefore(lower, musical.index))) out.showType = "play";
+    else if (musical && play) out.showType = "either";
+
+    // Youngest child's age, if given ("youngest is 6", "my 8-year-old", "kids 6 and 10").
+    if (out.who === "family") {
+      const ages = [];
+      for (const m of lower.matchAll(/\b(\d{1,2})[- ](?:year[- ]old|yo|yr[- ]old)s?\b/g)) ages.push(Number(m[1]));
+      for (const m of lower.matchAll(/\b(?:youngest|kids?|children|son|daughter|ages?)\s+(?:is |are |aged? |of )?(\d{1,2})(?:\s*(?:,|and|&)\s*(\d{1,2}))*/g))
+        for (const n of m[0].match(/\d{1,2}/g)) ages.push(Number(n));
+      const kids = ages.filter((a) => a >= 1 && a <= 17);
+      if (kids.length) out.age = Math.min(...kids);
+    }
+
+    // Optional answers.
+    if (/\b(first (?:time|broadway|show)|never been|never seen a broadway)\b/.test(lower)) out.first = "yes";
+    const rules = [];
+    if (/\b(no|hate|not into|avoid|can'?t stand|nothing)\b[^.,;!?]{0,20}\bjukebox/.test(lower)) rules.push("jukebox");
+    if (/\b(nothing too long|not too long|short|under (?:two|2) hours|can'?t sit (?:still|long))\b/.test(lower)) rules.push("long runtime");
+    if (/\b(nothing (?:too )?loud|not too loud|quiet|sensitive to (?:noise|sound))\b/.test(lower)) rules.push("loud effects");
+    if (/\b(nothing (?:too )?dark|nothing heavy|no heavy|nothing sad|keep it light)\b/.test(lower)) rules.push("adult themes");
+    if (rules.length) out.rules = rules;
+    return out;
+  }
+
   return {
-    DEALBREAKERS, LONG_RUNTIME_MIN, minAge, parseAges, violations, closeness, priceText,
+    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, minAge, parseAges, violations, closeness, priceText,
     analyzeText, scoreShow, recommendLocal, recommendWithAI, buildAiPrompt, prepare, parseJson, runtimeText, previewsNote,
   };
 });
