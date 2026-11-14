@@ -289,6 +289,7 @@ button.line:hover { background: var(--accent-soft); }
 
 <script>
 const SHOWS = /*__CATALOG__*/null;
+const POSTHOG = /*__POSTHOG__*/null;
 </script>
 <script>
 /*__CORE__*/
@@ -298,6 +299,30 @@ const SHOWS = /*__CATALOG__*/null;
   const R = window.Recommender;
   const BY_TITLE = Object.fromEntries(SHOWS.map((s) => [s.title, s]));
   const $ = (id) => document.getElementById(id);
+  // ---------------------------------------------------------------- analytics (PostHog)
+  // Sends choices and counts only, never what someone types. With no token configured at build time this does nothing.
+  function loadAnalytics(cfg) {
+    if (!cfg || !cfg.token || !cfg.host) return;
+    if (window.posthog && window.posthog.__loaded) return;
+    const ph = window.posthog = window.posthog || [];
+    if (ph.__SV) return;
+    ph._i = [];
+    ph.init = function (key, config, name) { ph._i.push([key, config, name]); };
+    ["capture", "identify", "reset", "register", "register_once", "opt_out_capturing", "opt_in_capturing"].forEach(function (m) {
+      ph[m] = function () { ph.push([m].concat(Array.prototype.slice.call(arguments))); };
+    });
+    ph.__SV = 1;
+    const s = document.createElement("script");
+    s.async = true; s.crossOrigin = "anonymous";
+    s.src = cfg.host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js";
+    document.head.appendChild(s);
+    ph.init(cfg.token, { api_host: cfg.host, defaults: "2026-08-30" });
+  }
+  loadAnalytics(POSTHOG);
+  function track(name, props) { try { if (window.posthog && typeof window.posthog.capture === "function") window.posthog.capture(name, props || {}); } catch (e) { /* analytics must never break the app */ } }
+  let firstTouch = null, firstPicksSent = false, lastPicksKey = "";
+  const touch = () => { if (firstTouch === null) firstTouch = Date.now(); };
+
   const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function el(tag, cls, text) {
@@ -365,7 +390,7 @@ const SHOWS = /*__CATALOG__*/null;
   optionGroup("rules", "rules", RULES, "checkbox", false);
   PRESETS.forEach(([label, set]) => {
     const b = el("button", "", label); b.type = "button";
-    b.addEventListener("click", () => { state = { ...set, rules: [...set.rules] }; syncControls(); update(); });
+    b.addEventListener("click", () => { touch(); track("quick_start_clicked", { example: label }); state = { ...set, rules: [...set.rules] }; syncControls(); update(); });
     $("quick").append(b);
   });
 
@@ -708,9 +733,21 @@ const SHOWS = /*__CATALOG__*/null;
     $("status").textContent = `${result.picks.length} picks: ${result.picks.map((p) => p.title).join(", ")}.`;
     $("jumpText").textContent = `See your ${result.picks.length} picks`;
     hasPicks = true; refreshJump();
+    const key = result.picks.map((p) => p.title).join("|");
+    if (key !== lastPicksKey) {
+      lastPicksKey = key;
+      const props = {
+        who: state.who, mood: state.mood, max_price: state.budget === null ? "any" : state.budget, rules: state.rules,
+        been_before: state.first || "either", has_text: state.text.trim().length > 0, text_length: state.text.trim().length,
+        picks: result.picks.map((p) => p.title), near_misses: result.picks.filter((p) => !p.fits_all_limits).length,
+        eligible_count: result.eligibleCount, offset,
+      };
+      if (!firstPicksSent) { firstPicksSent = true; props.first_picks = true; if (firstTouch !== null) props.seconds_to_first_picks = Math.round((Date.now() - firstTouch) / 1000); }
+      track("picks_shown", props);
+    }
   }
   function renderEmpty() {
-    lastResult = null; hasPicks = false; refreshJump();
+    lastResult = null; hasPicks = false; refreshJump(); lastPicksKey = "";
     $("picks").replaceChildren(); $("notices").replaceChildren();
     $("empty").hidden = false; $("scope").hidden = true; $("ruled").hidden = true;
     $("actions").hidden = true; $("copybox").hidden = true;
@@ -729,6 +766,9 @@ const SHOWS = /*__CATALOG__*/null;
   let typing = null;
   $("brief").addEventListener("change", (e) => {
     const t = e.target; if (!t || !t.name) return;
+    touch();
+    if (t.name === "rules") track("question_answered", { question: "rules", value: [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value) });
+    else track("question_answered", { question: t.name, value: t.name === "budget" && t.value !== "any" ? Number(t.value) : t.value });
     if (t.name === "who") { state.who = t.value; $("ageWrap").hidden = state.who !== "family"; if (state.who !== "family") { state.age = null; $("ageOut").textContent = ageText(); } }
     else if (t.name === "mood") state.mood = t.value;
     else if (t.name === "budget") { state.budget = t.value === "any" ? null : Number(t.value); if (state.budget !== null) $("budgetRange").value = state.budget; $("budgetOut").textContent = budgetText(); }
@@ -736,19 +776,22 @@ const SHOWS = /*__CATALOG__*/null;
     else if (t.name === "rules") state.rules = [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value);
     update();
   });
-  $("text").addEventListener("input", () => { state.text = $("text").value; clearTimeout(typing); typing = setTimeout(update, 450); });
+  $("text").addEventListener("input", () => { touch(); state.text = $("text").value; clearTimeout(typing); typing = setTimeout(update, 450); });
   $("ageUp").addEventListener("click", () => { state.age = state.age === null ? 6 : Math.min(17, state.age + 1); $("ageOut").textContent = ageText(); update(); });
   $("ageDown").addEventListener("click", () => { state.age = state.age === null || state.age <= 1 ? null : state.age - 1; $("ageOut").textContent = ageText(); update(); });
-  $("reset").addEventListener("click", () => { state = fresh(); syncControls(); update(); });
+  $("reset").addEventListener("click", () => { track("start_over_clicked"); state = fresh(); syncControls(); update(); });
+  $("budgetRange").addEventListener("change", () => track("price_slider_used", { max_price: Number($("budgetRange").value) }));
   $("budgetRange").addEventListener("input", () => {
+    touch();
     state.budget = Number($("budgetRange").value); $("budgetOut").textContent = budgetText();
     setRadio("budget", String(state.budget)); update();
   });
-  $("more").addEventListener("click", () => { offset = (offset + 3) % (lastResult.eligibleCount || 3); update(true); $("picksTop").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); });
+  $("more").addEventListener("click", () => { track("different_picks_clicked"); offset = (offset + 3) % (lastResult.eligibleCount || 3); update(true); $("picksTop").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); });
 
   $("copy").addEventListener("click", async () => {
     if (!lastResult) return;
     const text = "My Broadway picks:\n" + lastResult.picks.map((p, i) => `${i + 1}. ${p.title} at ${p.theater}, ${money(p)} (typical, not live)`).join("\n") + "\nMade with Broadway Concierge.";
+    track("picks_copied");
     try { await navigator.clipboard.writeText(text); $("status").textContent = "Copied your picks."; $("copy").textContent = "Copied"; setTimeout(() => { $("copy").textContent = "Copy my picks"; }, 1800); }
     catch (e) { $("copybox").hidden = false; const t = $("copytext"); t.value = text; t.focus(); t.select(); }
   });
