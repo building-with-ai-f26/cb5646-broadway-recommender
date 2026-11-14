@@ -31,6 +31,7 @@ with col1:
     if who == "family":
         kids_ages = st.text_input("Kids' ages (if any)", placeholder="e.g. 6, 10")
     mood = st.selectbox("Mood", ["(any)", "laugh", "cry", "be wowed", "sing along", "something different"])
+    show_type = st.radio("Musical or play?", ["Either", "Musical", "Play"], horizontal=True)
     first_show = st.radio("First Broadway show?", ["Not said", "Yes", "No"], horizontal=True)
 with col2:
     no_limit = st.checkbox("No budget limit", value=False)
@@ -38,7 +39,8 @@ with col2:
     dealbreakers = st.multiselect(
         "Dealbreakers",
         DEALBREAKERS,
-        help=(f"'long runtime' means {LONG_RUNTIME_MIN // 60}h{LONG_RUNTIME_MIN % 60}m or more. "
+        help=(f"'long runtime' means longer than {(LONG_RUNTIME_MIN - 1) // 60}h{(LONG_RUNTIME_MIN - 1) % 60}m. "
+              "'adult themes' means death, violence, abuse or war. "
               "'no intermission' means you only want shows that run straight through."),
     )
 
@@ -57,6 +59,7 @@ if st.button("Find my shows", type="primary"):
                 max_price=max_price,
                 dealbreakers=dealbreakers,
                 first_show={"Yes": True, "No": False}.get(first_show),
+                show_type=show_type.lower() if show_type != "Either" else None,
             )
         except RuntimeError as e:  # missing API key
             st.error(str(e))
@@ -71,7 +74,7 @@ if st.button("Find my shows", type="primary"):
     st.session_state.shown_once = True
     track(
         st.session_state.visitor, "picks_shown",
-        who=who, mood=mood, max_price=max_price if max_price is not None else "any",
+        who=who, mood=mood, show_type=show_type, max_price=max_price if max_price is not None else "any",
         dealbreakers=list(dealbreakers), first_show=first_show,
         has_kids_ages=bool(kids_ages.strip()), text_length=len(text.strip()),
         picks=[p["title"] for p in result["picks"]],

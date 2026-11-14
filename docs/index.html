@@ -175,10 +175,10 @@
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
         <strong>Current Status:</strong> Build 2 in progress: local Streamlit prototype plus a browser version<br />
-        <strong>Demo:</strong> Screenshot of the current web version after answering the three required questions: three picks with a cover, status, price, runtime, ages, why it fits and a heads-up.<br />
+        <strong>Demo:</strong> Screenshot of the current web version after choosing the "Date night, $150 max" example. The four required questions (who, mood, musical or play, price) are filled in from the description and marked "From your description"; the result is three picks with a cover, status, price, runtime, ages, why it fits and a heads-up.<br />
         <strong>Try it:</strong> <a href="app/">web version of the show recommender</a> (34 shows running as of Nov 13, 2026).
       </p>
-      <img src="app-screenshot.png" alt="Broadway Concierge web version on Nov 13: date night, cry, under $150 selected, with three picks: Maybe Happy Ending, The Outsiders and Buena Vista Social Club" style="max-width:100%; border:1px solid #e5e7eb; border-radius:8px;" />
+      <img src="app-screenshot.png" alt="Broadway Concierge web version on Nov 14: the Date night example fills in date night, cry, musical and under $150 from its description, with three picks: Maybe Happy Ending, The Great Gatsby and The Outsiders" style="max-width:100%; border:1px solid #e5e7eb; border-radius:8px;" />
       <p class="meta">
         This screenshot is the browser version using the built-in matcher, with no API key. Next: run the Streamlit app with my own API key and add a screenshot of the picks it returns.
       </p>
@@ -218,7 +218,7 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
       <p><strong>Riskiest Assumption:</strong> Broadway Concierge takes a user’s request, loads a hand-built catalog of running shows, and sends both to the Claude API, which picks three fits with a reason, a caution, and a typical price. The same pattern powers the secondary resale checker, which compares a pasted listing against a red-flag checklist and theater seating info. There’s no database and no live data, so the riskiest assumption is that the catalog is accurate and current enough to trust. Closed shows, stale prices, or wrong content warnings would sink user confidence, so verify every show and test with a few sample requests.</p>
-      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>.</p>
+      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, musical or play, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages, show type or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>. There, the person can start from an example or describe the night in words, and the four required questions are filled in from that text; anything they pick themselves is never overwritten.</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
@@ -260,6 +260,7 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
         <h3>Build 2 · Smallest Local Version & PostHog (Due Nov 16)</h3>
         <ul>
           <li><strong>What shipped (as of Nov 13):</strong> The catalog grew from 8 to 34 shows running or opening now, checked against Broadway Direct's what's-on guide. A browser version of the recommender (<a href="app/">app/</a>) that applies the same hard rules and ranks the picks in the browser, with no API key needed. 27 offline checks in <code>web/test_core.js</code> plus the existing Python tests, all passing. Real run and test commands in <code>AGENTS.md</code>. Merged in pull request #1.<br />
+          <strong>Nov 14 update to the web app:</strong> Quick start now leads with four examples, then "Or, describe your night." Each example is a written description, and the app reads any description to fill in who is going, mood, musical or play, price, kids' ages and some rule-outs, labeled "From your description" so the person can check and change them. New required question: Musical, Play or Either. New rule-out: "No adult themes" (death, violence, abuse or war; the old "Nothing adult" option is now "No crude or sexual content"). "Under 2h45" became "Under 2h15", which rules out 20 of 34 shows instead of 3. The Streamlit app got the same three rule changes. 34 offline checks in <code>web/test_core.js</code>, all passing.<br />
           <strong>Still open before Nov 16:</strong> run the Streamlit app with my own API key and screenshot the picks, and write PRD v2. PostHog is installed on this page, the web app and the Streamlit app (merged Nov 13); the first events arrived from my own test run.</li>
           <li><strong>What broke / changed in PRD:</strong>
             <ul>
@@ -267,6 +268,8 @@ Secondary feature: paste a resale listing and get a low, medium, or high risk ra
               <li>The text reader treated "I hate jukebox musicals, and we want to laugh" as a dislike of comedy, because the word "hate" reached across the comma. Found by running the example request in a browser; fixed by ending the dislike at a comma or "but", with a test.</li>
               <li>A family night with no kids' ages entered could return a show meant for ages 13 and up. Now the ranker leans toward school-age shows when kids are mentioned and says so under the picks.</li>
               <li>Named the target user: Anne, a knowledgeable regular theatergoer, in place of the broader "first-timer who doesn't know the shows" description. The pitch and before/after workflow below still describe first-timers and are next to align. Anne also wants taste memory, schedule and deal alerts, which the product does not do yet; closing-date notes are the only part built.</li>
+              <li>Reading the description is plain keyword matching, not AI, so it can miss or misread phrasing ("my mom" counts as a family night; "a musical or a play" means Either). It only fills what the text clearly says and leaves the rest required, and the labels show what was guessed.</li>
+              <li>"No adult themes" is decided from the catalog's content notes, which are editorial estimates. It rules out 18 of 34 shows, including The Lion King (a parent's death), so it is strict on purpose.</li>
               <li>The test suite used Hamilton as its made-up show, which stopped working once Hamilton was a real entry in the catalog.</li>
               <li>Cost per request went up about 2.3 times, from roughly $0.009 to $0.02, because the Python app sends every eligible show to Claude. The browser version sends only the top 10.</li>
             </ul>
