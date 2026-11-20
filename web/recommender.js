@@ -81,7 +81,14 @@
       theater: show.theater,
       price_range: priceText(show),
       rush_or_lottery: show.rush_or_lottery,
+      official_url: show.official_url || null,
+      official_url_kind: show.official_url_kind || null,
     };
+  }
+
+  /** Shows that have closed stay in the catalog for history but are never recommended. */
+  function openShows(shows) {
+    return (shows || []).filter((s) => s.status !== "closed");
   }
 
   // ------------------------------------------------------------ reading the free text
@@ -337,7 +344,8 @@
    * opts.offset skips down the ranking for "show me different picks" (wraps around the eligible list).
    * Each pick carries `rank`, its place in the full ranking.
    */
-  function recommendLocal(shows, input, opts) {
+  function recommendLocal(allShows, input, opts) {
+    const shows = openShows(allShows);
     const { limits, ctx, eligible, ranked, want } = prepare(shows, input);
     const wanted = (opts && opts.offset) || 0;
     const start = eligible.length > want && wanted > 0 ? wanted % eligible.length : 0;
@@ -394,7 +402,8 @@
    * Ask Claude to pick from the top of the built-in ranking, then check its answer.
    * `ask(system, user)` must return the reply text. Any failure falls back to the built-in picks.
    */
-  async function recommendWithAI(shows, input, ask) {
+  async function recommendWithAI(allShows, input, ask) {
+    const shows = openShows(allShows);
     const prepared = prepare(shows, input);
     const local = recommendLocal(shows, input);
     if (!prepared.want) return local;
@@ -518,7 +527,7 @@
   }
 
   return {
-    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, minAge, parseAges, violations, closeness, priceText,
+    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, openShows, minAge, parseAges, violations, closeness, priceText,
     analyzeText, scoreShow, recommendLocal, recommendWithAI, buildAiPrompt, prepare, parseJson, runtimeText, previewsNote,
   };
 });

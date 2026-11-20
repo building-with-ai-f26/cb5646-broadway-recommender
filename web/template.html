@@ -134,6 +134,9 @@ button.line:hover { background: var(--accent-soft); }
 .chip.rush { color: var(--go); border-color: var(--go); background: var(--go-soft); font-weight: 600; }
 .chip.soon { color: var(--standby); border-color: var(--standby); background: var(--standby-soft); font-weight: 600; }
 .fine { color: var(--muted); font-size: .86rem; }
+.official { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 700; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.official:hover { color: var(--ink); }
+.official:focus-visible { outline: 3px solid var(--gold, #e0a01a); outline-offset: 2px; border-radius: 4px; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .copybox { display: grid; gap: 6px; }
@@ -185,7 +188,7 @@ button.line:hover { background: var(--accent-soft); }
   .info { display: contents; }
   .cover { grid-column: 1; grid-row: 1 / span 2; }
   .info > h3, .info > .tags { grid-column: 2; }
-  .info > .facts, .info > .fine, .info > .why, .info > .heads { grid-column: 1 / -1; }
+  .info > .facts, .info > .fine, .info > .official, .info > .why, .info > .heads { grid-column: 1 / -1; }
   .facts { grid-template-columns: 1fr 1fr; gap: 12px 14px; }
     .info h3 { font-size: 1.35rem; }
 }
@@ -302,7 +305,8 @@ button.line:hover { background: var(--accent-soft); }
 <button type="button" class="jump" id="jump"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span id="jumpText">See your picks</span></button>
 
 <script>
-const SHOWS = /*__CATALOG__*/null;
+const CATALOG = /*__CATALOG__*/null;
+const SHOWS = CATALOG.filter((s) => s.status !== "closed"); // closed shows stay in the file but are never shown
 const POSTHOG = /*__POSTHOG__*/null;
 </script>
 <script>
@@ -735,6 +739,13 @@ const POSTHOG = /*__POSTHOG__*/null;
     fact("people", "Best for", String(p.age).replace(/^Best /, "Ages "));
     info.append(facts);
     if (show.price_basis) info.append(el("p", "fine", show.price_basis));
+    if (p.official_url) {
+      const a = el("a", "official", p.official_url_kind === "tickets" ? "Official tickets ↗" : "Official show site ↗");
+      a.href = p.official_url; a.target = "_blank"; a.rel = "noopener";
+      a.setAttribute("aria-label", (p.official_url_kind === "tickets" ? "Official tickets for " : "Official site for ") + p.title + " (opens in a new tab)");
+      a.addEventListener("click", () => track("official_link_clicked", { title: p.title, kind: p.official_url_kind }));
+      info.append(a);
+    }
 
     const why = el("section", "why"); why.append(el("h4", "", "Why it fits"), el("p", "", p.why_it_fits)); info.append(why);
     const heads = el("div", "heads"); heads.innerHTML = fiSvg("alert");

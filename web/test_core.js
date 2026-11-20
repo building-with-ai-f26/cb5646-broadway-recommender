@@ -111,7 +111,7 @@ const sloppyAi = async () =>
   });
   check("family (adults only): no age limit and no kids note", () => {
     const r = R.recommendLocal(SHOWS, { ...base, who: "family", kidsAges: "6", text: "Taking my mom for her birthday" });
-    assert.strictEqual(r.eligibleCount, SHOWS.length);
+    assert.strictEqual(r.eligibleCount, R.openShows(SHOWS).length);
     assert.ok(!/school-age/.test(r.assumptions));
   });
   check("taking kids with no age -> picks lean to school-age kids and say so", () => {
@@ -172,7 +172,7 @@ const sloppyAi = async () =>
     for (const t of ["play", "musical"]) {
       const r = R.recommendLocal(SHOWS, { ...base, showType: t });
       assert.ok(r.picks.every((p) => BY_TITLE[p.title].genre === t), t);
-      assert.strictEqual(r.eligibleCount, SHOWS.filter((s) => s.genre === t).length);
+      assert.strictEqual(r.eligibleCount, R.openShows(SHOWS).filter((s) => s.genre === t).length);
     }
   });
   check("under 2h15: nothing longer than 135 minutes", () => {
@@ -198,6 +198,19 @@ const sloppyAi = async () =>
     const sorted = (o) => JSON.stringify(Object.fromEntries(Object.entries(o).sort()));
     const cases = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "tests", "infer_cases.json"), "utf8")).cases;
     for (const [text, want] of cases) assert.strictEqual(sorted(R.inferAnswers(text)), sorted(want), text);
+  });
+  check("closed shows are never recommended; every open show has an https official link", () => {
+    const closed = SHOWS.filter((x) => x.status === "closed").map((x) => x.title);
+    assert.deepStrictEqual(closed, ["School Girls; Or, The African Mean Girls Play"]);
+    for (const offset of [0, 3, 6, 9, 12]) {
+      const r = R.recommendLocal(SHOWS, { ...base, showType: "play" }, { offset });
+      assert.ok(r.picks.every((p) => !closed.includes(p.title)));
+    }
+    const open = R.openShows(SHOWS);
+    assert.strictEqual(open.length, 33);
+    assert.ok(open.every((x) => /^https:\/\/[^\s]+$/.test(x.official_url) && ["site", "tickets"].includes(x.official_url_kind)), "missing link");
+    const pick = R.recommendLocal(SHOWS, base).picks[0];
+    assert.ok(pick.official_url && pick.official_url.startsWith("https://"));
   });
   check("catalog sanity: 34 shows, unique titles, price_low <= price_high", () => {
     assert.strictEqual(SHOWS.length, 34);
