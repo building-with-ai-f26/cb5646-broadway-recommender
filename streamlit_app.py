@@ -159,6 +159,9 @@ if st.button("Find my shows", type="primary"):
             st.write(f"**Price:** {p['price_range']}")
             if p["rush_or_lottery"]:
                 st.write("🎟️ Rush or lottery tickets are often available. Check the official show site.")
+            if p.get("official_url"):
+                label = "Official tickets" if p.get("official_url_kind") == "tickets" else "Official show site"
+                st.link_button(f"{label} ↗", p["official_url"])
     if result["assumptions"]:
         st.caption(f"Assumptions we made: {result['assumptions']}")
     st.caption("Prices are typical ranges from a hand-built catalog, not live. Always confirm on the official ticket seller.")

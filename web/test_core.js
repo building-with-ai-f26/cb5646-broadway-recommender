@@ -111,7 +111,7 @@ const sloppyAi = async () =>
   });
   check("family (adults only): no age limit and no kids note", () => {
     const r = R.recommendLocal(SHOWS, { ...base, who: "family", kidsAges: "6", text: "Taking my mom for her birthday" });
-    assert.strictEqual(r.eligibleCount, SHOWS.length);
+    assert.strictEqual(r.eligibleCount, R.openShows(SHOWS).length);
     assert.ok(!/school-age/.test(r.assumptions));
   });
   check("taking kids with no age -> picks lean to school-age kids and say so", () => {
@@ -172,7 +172,7 @@ const sloppyAi = async () =>
     for (const t of ["play", "musical"]) {
       const r = R.recommendLocal(SHOWS, { ...base, showType: t });
       assert.ok(r.picks.every((p) => BY_TITLE[p.title].genre === t), t);
-      assert.strictEqual(r.eligibleCount, SHOWS.filter((s) => s.genre === t).length);
+      assert.strictEqual(r.eligibleCount, R.openShows(SHOWS).filter((s) => s.genre === t).length);
     }
   });
   check("under 2h15: nothing longer than 135 minutes", () => {
@@ -199,9 +199,18 @@ const sloppyAi = async () =>
     const cases = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "tests", "infer_cases.json"), "utf8")).cases;
     for (const [text, want] of cases) assert.strictEqual(sorted(R.inferAnswers(text)), sorted(want), text);
   });
-  check("catalog sanity: 34 shows, unique titles, price_low <= price_high", () => {
-    assert.strictEqual(SHOWS.length, 34);
-    assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 34);
+  check("closed shows are never recommended; every show has an https official site", () => {
+    const closed = { ...SHOWS[0], title: "Closed Test Show", status: "closed" };
+    const r = R.recommendLocal([closed, ...SHOWS], base);
+    assert.ok(r.picks.every((p) => p.title !== "Closed Test Show"));
+    assert.strictEqual(R.openShows([closed, ...SHOWS]).length, SHOWS.length);
+    assert.ok(SHOWS.every((x) => /^https:\/\/[^\s]+$/.test(x.official_url) && x.official_url_kind === "site"), "missing link");
+    const pick = R.recommendLocal(SHOWS, base).picks[0];
+    assert.ok(pick.official_url && pick.official_url.startsWith("https://"));
+  });
+  check("catalog sanity: 33 shows, unique titles, price_low <= price_high", () => {
+    assert.strictEqual(SHOWS.length, 33);
+    assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 33);
     assert.ok(SHOWS.every((s) => s.price_low <= s.price_high && s.runtime_min > 0));
   });
 

@@ -131,6 +131,8 @@ def catalog_fields(show):
         "theater": show["theater"],
         "price_range": price_text(show),
         "rush_or_lottery": show["rush_or_lottery"],
+        "official_url": show.get("official_url"),
+        "official_url_kind": show.get("official_url_kind"),
     }
 
 
@@ -276,7 +278,7 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
     Every pick has: title, theater, price_range, rush_or_lottery, why_it_fits, caution,
     fits_all_limits. Picks with fits_all_limits=False are labeled near-misses.
     """
-    shows = load_shows()
+    shows = [s for s in load_shows() if s.get("status") != "closed"]  # closed shows are never recommended
     ages = parse_ages(kids_ages) if who == "kids" else []
     limits = dict(max_price=max_price, kids_ages=ages, dealbreakers=dealbreakers,
                   show_type=show_type if show_type in SHOW_TYPES else None)
