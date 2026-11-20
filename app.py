@@ -55,7 +55,8 @@ def ask(system, user, client=None, max_tokens=1500):
         model=MODEL, max_tokens=max_tokens, system=system,
         messages=[{"role": "user", "content": user}],
     )
-    return reply.content[0].text
+    # Newer models can return a "thinking" block before the answer, so keep only text blocks.
+    return "".join(getattr(block, "text", "") for block in reply.content)
 
 
 def parse_json(text):
