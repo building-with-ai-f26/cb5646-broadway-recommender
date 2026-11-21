@@ -101,6 +101,24 @@ def run_offline():
     print(("PASS " if not missed else "FAIL ") + f"infer_answers: {len(cases) - len(missed)}/{len(cases)} descriptions filled correctly")
     failures += bool(missed)
 
+    # Dates: same shared cases, plus the date limit.
+    from app import times_on, violations as v_
+    data = json.load(open(Path(__file__).parent / "tests" / "infer_cases.json"))
+    dmiss = []
+    for text, today, want in data["date_cases"]:
+        got = infer_answers(text, today)
+        picked = {k: got[k] for k in ("date", "timeOfDay") if k in got}
+        if picked != want:
+            dmiss.append((text, picked, want))
+    shows_by = {s["title"]: s for s in load_shows()}
+    ok_limit = (v_(shows_by["Wicked"], date="2026-11-23") == ["it doesn't play on Mondays"]
+                and v_(shows_by["The Imaginary Invalid"], date="2026-12-02") == ["it closes Sun, Nov 22"]
+                and all(t < "17:00" for t in times_on(shows_by["Hamilton"], "2026-11-21", "matinee")))
+    print(("PASS " if not dmiss and ok_limit else "FAIL ") + f"dates: {len(data['date_cases']) - len(dmiss)}/{len(data['date_cases'])} date phrases, limits ok={ok_limit}")
+    for m in dmiss:
+        print("  ", m)
+    failures += bool(dmiss) or not ok_limit
+
     print("\nAll offline checks passed." if not failures else f"\n{failures} case(s) failed.")
     return failures
 

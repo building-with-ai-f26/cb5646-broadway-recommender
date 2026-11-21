@@ -208,6 +208,28 @@ const sloppyAi = async () =>
     const pick = R.recommendLocal(SHOWS, base).picks[0];
     assert.ok(pick.official_url && pick.official_url.startsWith("https://"));
   });
+  check("dates: reader finds dates and times (shared cases with app.py)", () => {
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "tests", "infer_cases.json"), "utf8"));
+    for (const [text, today, want] of data.date_cases) {
+      const got = R.inferAnswers(text, today), picked = {};
+      if ("date" in got) picked.date = got.date;
+      if ("timeOfDay" in got) picked.timeOfDay = got.timeOfDay;
+      assert.deepStrictEqual(picked, want, text);
+    }
+  });
+  check("dates: only shows playing that day, matinee/evening, closing dates, times on picks", () => {
+    const mon = R.recommendLocal(SHOWS, { ...base, date: "2026-11-23" });
+    assert.ok(mon.eligibleCount === SHOWS.filter((s) => s.schedule.mon.length).length && mon.eligibleCount < 8);
+    assert.ok(mon.picks.filter((p) => p.fits_all_limits).every((p) => p.performances.length));
+    const ii = BY_TITLE["The Imaginary Invalid"];
+    assert.deepStrictEqual(R.violations(ii, { date: "2026-12-02" }), ["it closes Sun, Nov 22"]);
+    assert.strictEqual(R.violations(BY_TITLE["Wicked"], { date: "2026-11-23" })[0], "it doesn't play on Mondays");
+    const mat = R.recommendLocal(SHOWS, { ...base, date: "2026-12-05", timeOfDay: "matinee" });
+    assert.ok(mat.picks.every((p) => p.performances.every((t) => t < "17:00")));
+    assert.ok(/holiday week/.test(R.recommendLocal(SHOWS, { ...base, date: "2026-11-27" }).assumptions));
+    assert.ok(!/holiday week/.test(R.recommendLocal(SHOWS, { ...base, date: "2026-12-05" }).assumptions));
+    assert.ok(SHOWS.every((s) => ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].every((k) => Array.isArray(s.schedule[k]))));
+  });
   check("catalog sanity: 33 shows, unique titles, price_low <= price_high", () => {
     assert.strictEqual(SHOWS.length, 33);
     assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 33);

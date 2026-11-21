@@ -156,5 +156,70 @@
         "showType": "play"
       }
     ]
+  ],
+  "date_note": "date_cases: [text, today, expected {date, timeOfDay}] for the date reader in both apps.",
+  "date_cases": [
+    [
+      "Date night tonight, something funny",
+      "2026-11-20",
+      {
+        "date": "2026-11-20",
+        "timeOfDay": "evening"
+      }
+    ],
+    [
+      "we want a saturday matinee",
+      "2026-11-20",
+      {
+        "date": "2026-11-21",
+        "timeOfDay": "matinee"
+      }
+    ],
+    [
+      "tomorrow evening with friends",
+      "2026-11-20",
+      {
+        "date": "2026-11-21",
+        "timeOfDay": "evening"
+      }
+    ],
+    [
+      "Going Dec 5",
+      "2026-11-20",
+      {
+        "date": "2026-12-05"
+      }
+    ],
+    [
+      "visiting on 1/9",
+      "2026-11-20",
+      {
+        "date": "2027-01-09"
+      }
+    ],
+    [
+      "next friday",
+      "2026-11-20",
+      {
+        "date": "2026-11-27"
+      }
+    ],
+    [
+      "this friday",
+      "2026-11-20",
+      {
+        "date": "2026-11-20"
+      }
+    ],
+    [
+      "an afternoon show",
+      "2026-11-20",
+      {}
+    ],
+    [
+      "date night with my wife",
+      "2026-11-20",
+      {}
+    ]
   ]
 }

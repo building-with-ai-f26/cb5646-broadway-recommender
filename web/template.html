@@ -134,9 +134,18 @@ button.line:hover { background: var(--accent-soft); }
 .chip.rush { color: var(--go); border-color: var(--go); background: var(--go-soft); font-weight: 600; }
 .chip.soon { color: var(--standby); border-color: var(--standby); background: var(--standby-soft); font-weight: 600; }
 .fine { color: var(--muted); font-size: .86rem; }
-.official { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 700; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
-.official:hover { color: var(--ink); }
-.official:focus-visible { outline: 3px solid var(--gold, #e0a01a); outline-offset: 2px; border-radius: 4px; }
+.datepick { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.datepick label { font-weight: 600; font-size: .95rem; }
+.datepick input { min-height: 44px; padding: 6px 12px; font: inherit; color: var(--ink); background: var(--paper, #fff); border: 1.5px solid var(--line); border-radius: 10px; }
+.datepick input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+#todWrap { margin-top: 14px; }
+.label.sub { display: block; font-size: .95rem; margin-bottom: 8px; }
+.chip.when { color: var(--ink); border-color: var(--ink); font-weight: 600; }
+.official { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px 18px; margin-top: 4px; border: 2px solid var(--accent); border-radius: 999px; color: var(--accent); font-weight: 700; text-decoration: none; text-align: center; }
+.official:hover { background: var(--accent); color: var(--accent-ink); }
+.official:focus-visible { outline: 3px solid var(--gold, #e0a01a); outline-offset: 2px; }
+.official small { font-weight: 500; opacity: .85; }
+@media (min-width: 601px) { .official { justify-self: start; } }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .copybox { display: grid; gap: 6px; }
@@ -264,6 +273,20 @@ button.line:hover { background: var(--accent-soft); }
         </div>
       </fieldset>
 
+      <fieldset class="when">
+        <legend>When are you going? <span class="req opt">Optional</span></legend>
+        <div class="pills" id="whenQuick"></div>
+        <div class="datepick">
+          <label for="dateIn">Or pick a date</label>
+          <input type="date" id="dateIn">
+        </div>
+        <div id="todWrap" hidden>
+          <span class="label sub" id="todLabel">Time of day <span class="req opt">Optional</span></span>
+          <div class="pills" id="tod" role="group" aria-labelledby="todLabel"></div>
+        </div>
+        <p class="hint" id="whenHint" aria-live="polite">Skip this if you're flexible. Pick a day and we only suggest shows playing then.</p>
+      </fieldset>
+
       <fieldset>
         <legend>Been to Broadway before? <span class="req opt">Optional</span></legend>
         <div class="pills" id="first"></div>
@@ -378,7 +401,7 @@ const POSTHOG = /*__POSTHOG__*/null;
 
   // who, mood, type and budget start unset (undefined) because they are required; budget null means "any price".
   // `auto` lists answers filled in from the description; `autoRules` the rule-outs filled in that way.
-  const fresh = () => ({ who: undefined, mood: undefined, type: undefined, budget: undefined, age: null, first: "", rules: [], text: "", auto: new Set(), autoRules: [] });
+  const fresh = () => ({ who: undefined, mood: undefined, type: undefined, budget: undefined, age: null, first: "", rules: [], date: "", tod: "", text: "", auto: new Set(), autoRules: [] });
   // Each example is a description; picking one fills the text box and the questions are read from it.
   const PRESETS = [
     ["Date night, $150 max", "Date night with my partner. Something romantic that might make us cry, a musical, $150 max per ticket."],
@@ -411,6 +434,13 @@ const POSTHOG = /*__POSTHOG__*/null;
   optionGroup("who", "who", WHO, "radio", true, true);
   optionGroup("mood", "mood", MOOD, "radio", true, true);
   optionGroup("type", "type", TYPE, "radio", true, true);
+
+  // When: Tonight / Tomorrow / Any date, plus a date picker for anything else.
+  const TODAY = R.todayIso();
+  const WHEN = [[TODAY, "Tonight"], [R.addDays(TODAY, 1), "Tomorrow"], ["any", "Any date"]];
+  optionGroup("whenQuick", "when", WHEN, "radio", false, false);
+  optionGroup("tod", "tod", [["any", "Any time"], ["matinee", "Matinee (before 5 PM)"], ["evening", "Evening"]], "radio", false, false);
+  $("dateIn").min = TODAY; $("dateIn").max = R.addDays(TODAY, 365);
   optionGroup("budget", "budget", BUDGETS, "radio", false, true);
   optionGroup("first", "first", FIRST, "checkbox", false);
   optionGroup("rules", "rules", RULES, "checkbox", false);
@@ -425,7 +455,7 @@ const POSTHOG = /*__POSTHOG__*/null;
 
   // Fill the questions from the description. Answers the person picked themselves are never overwritten;
   // answers filled in earlier from the text are updated or cleared as the text changes.
-  const FILLABLE = [["who", "who"], ["mood", "mood"], ["type", "showType"], ["budget", "budget"], ["age", "age"], ["first", "first"]];
+  const FILLABLE = [["who", "who"], ["mood", "mood"], ["type", "showType"], ["budget", "budget"], ["age", "age"], ["first", "first"], ["date", "date"], ["tod", "timeOfDay"]];
   function applyInference() {
     const got = R.inferAnswers(state.text), blank = fresh(), filled = [];
     for (const [k, from] of FILLABLE) {
@@ -438,6 +468,8 @@ const POSTHOG = /*__POSTHOG__*/null;
     state.autoRules.filter((r) => !want.includes(r)).forEach((r) => { state.rules = state.rules.filter((x) => x !== r); });
     state.autoRules = state.autoRules.filter((r) => want.includes(r));
     want.forEach((r) => { if (!state.rules.includes(r)) { state.rules.push(r); state.autoRules.push(r); filled.push("rule:" + r); } });
+    if (state.date && state.date < TODAY) { state.date = ""; state.tod = ""; state.auto.delete("date"); state.auto.delete("tod"); }
+    if (!state.date && state.tod) { state.tod = ""; state.auto.delete("tod"); }
     if (state.who !== "kids" && state.auto.has("age")) { state.age = null; state.auto.delete("age"); }
     if (filled.length) track("answers_prefilled", { fields: filled });
   }
@@ -454,11 +486,26 @@ const POSTHOG = /*__POSTHOG__*/null;
     setRadio("budget", state.budget === undefined ? "" : state.budget === null ? "any" : String(state.budget));
     document.querySelectorAll('input[name="first"]').forEach((i) => { i.checked = state.first === "both" || state.first === i.value; });
     document.querySelectorAll('input[name="rules"]').forEach((i) => { i.checked = state.rules.includes(i.value); });
+    setRadio("when", state.date || "any");
+    $("dateIn").value = state.date;
+    $("todWrap").hidden = !state.date;
+    setRadio("tod", state.tod || "any");
+    refreshWhenHint();
     if ($("text").value !== state.text) $("text").value = state.text;
     $("ageWrap").hidden = state.who !== "kids";
     $("ageOut").textContent = ageText();
     if (typeof state.budget === "number") $("budgetRange").value = state.budget;
     $("budgetOut").textContent = budgetText();
+  }
+  function refreshWhenHint() {
+    if (!state.date) { $("whenHint").textContent = "Skip this if you're flexible. Pick a day and we only suggest shows playing then."; return; }
+    const n = SHOWS.filter((s) => R.timesOn(s, state.date, state.tod || null).length).length;
+    const when = R.fmtDay(state.date) + (state.tod ? " (" + state.tod + ")" : "");
+    let msg = `${n} of ${SHOWS.length} shows play ${when}.`;
+    if (R.weekdayOf(state.date) === 1) msg += " Most Broadway shows are dark on Mondays.";
+    if (R.isHolidayWeek(state.date)) msg += " It's a holiday week, so check times on the show's site.";
+    else msg += " Times come from a regular week; confirm on the show's site.";
+    $("whenHint").textContent = msg;
   }
   function refreshProgress() {
     REQUIRED.forEach(([k]) => {
@@ -478,6 +525,7 @@ const POSTHOG = /*__POSTHOG__*/null;
       text: state.text.trim(), who: state.who === "unsure" ? null : state.who, kidsAges: state.age === null ? "" : String(state.age),
       mood: state.mood === "surprise" ? null : state.mood, showType: state.type === "either" ? null : state.type, maxPrice: state.budget === undefined ? null : state.budget, dealbreakers: state.rules,
       firstShow: { yes: true, both: true, no: false }[state.first] ?? null, // anyone new -> favor first-timer-friendly shows
+      date: state.date || null, timeOfDay: state.date ? state.tod || null : null,
     };
   }
 
@@ -728,6 +776,7 @@ const POSTHOG = /*__POSTHOG__*/null;
     tags.append(st, el("span", "chip genre", p.genre === "play" ? "Play" : "Musical"));
     if (p.rush_or_lottery) tags.append(el("span", "chip rush", "Rush or lottery often available"));
     if (p.status === "previews" && p.opens) tags.append(el("span", "chip soon", "In previews, opens " + fmtDate(p.opens)));
+    if (p.date && p.performances && p.performances.length) tags.append(el("span", "chip when", R.fmtDay(p.date) + " · " + p.performances.map(R.fmtTime).join(" & ")));
     info.append(tags);
 
     const facts = el("dl", "facts");
@@ -738,26 +787,28 @@ const POSTHOG = /*__POSTHOG__*/null;
     fact("people", "Best for", String(p.age).replace(/^Best /, "Ages "));
     info.append(facts);
     if (show.price_basis) info.append(el("p", "fine", show.price_basis));
-    if (p.official_url) {
-      const a = el("a", "official", p.official_url_kind === "tickets" ? "Official tickets ↗" : "Official show site ↗");
-      a.href = p.official_url; a.target = "_blank"; a.rel = "noopener";
-      a.setAttribute("aria-label", (p.official_url_kind === "tickets" ? "Official tickets for " : "Official site for ") + p.title + " (opens in a new tab)");
-      a.addEventListener("click", () => track("official_link_clicked", { title: p.title, kind: p.official_url_kind }));
-      info.append(a);
-    }
 
     const why = el("section", "why"); why.append(el("h4", "", "Why it fits"), el("p", "", p.why_it_fits)); info.append(why);
     const heads = el("div", "heads"); heads.innerHTML = fiSvg("alert");
     const hb = el("div"); hb.append(el("h4", "", "Heads up"), el("p", "", p.caution)); heads.append(hb); info.append(heads);
+    // The call to action comes last: the person has read why it fits and the heads-up, and is ready to act.
+    if (p.official_url) {
+      const a = el("a", "official");
+      a.href = p.official_url; a.target = "_blank"; a.rel = "noopener";
+      a.append(document.createTextNode("Get tickets on the official site"), el("span", "", " ↗"));
+      a.setAttribute("aria-label", `${a.textContent.replace(" ↗", "")}: ${p.title} (opens in a new tab)`);
+      a.addEventListener("click", () => track("official_link_clicked", { title: p.title, rank: p.rank, with_date: !!p.date }));
+      info.append(a);
+    }
     art.append(info);
     return art;
   }
 
-  const BUCKETS = [[/not a musical/i, "plays"], [/not a play/i, "musicals"], [/over your \$|budget|\$/i, "over budget"], [/ages?|kids/i, "too mature for your kids"], [/jukebox/i, "jukebox"],
+  const BUCKETS = [[/closes /i, "closed by then"], [/doesn't play on|performance that day/i, "not playing then"], [/not a musical/i, "plays"], [/not a play/i, "musicals"], [/over your \$|budget|\$/i, "over budget"], [/ages?|kids/i, "too mature for your kids"], [/jukebox/i, "jukebox"],
     [/adult themes/i, "adult themes"], [/adult content/i, "crude or sexual content"],
     [/runs about|runtime|long/i, "too long"], [/loud/i, "loud"], [/intermission/i, "have an intermission"]];
   function ruledOut(input) {
-    const limits = { maxPrice: input.maxPrice, kidsAges: input.who === "kids" ? R.parseAges(input.kidsAges) : [], dealbreakers: input.dealbreakers, showType: input.showType };
+    const limits = { maxPrice: input.maxPrice, kidsAges: input.who === "kids" ? R.parseAges(input.kidsAges) : [], dealbreakers: input.dealbreakers, showType: input.showType, date: input.date, timeOfDay: input.timeOfDay };
     const counts = new Map(); let total = 0;
     for (const s of SHOWS) {
       const v = R.violations(s, limits); if (!v.length) continue; total++;
@@ -798,6 +849,7 @@ const POSTHOG = /*__POSTHOG__*/null;
         been_before: state.first || "either", has_text: state.text.trim().length > 0, text_length: state.text.trim().length,
         picks: result.picks.map((p) => p.title), near_misses: result.picks.filter((p) => !p.fits_all_limits).length,
         eligible_count: result.eligibleCount, offset,
+        date_set: !!state.date, days_ahead: state.date ? daysAhead(state.date) : null, weekday: state.date ? R.DAY_NAMES[R.weekdayOf(state.date)] : null, time_of_day: state.tod || null,
       };
       if (!firstPicksSent) { firstPicksSent = true; props.first_picks = true; if (firstTouch !== null) props.seconds_to_first_picks = Math.round((Date.now() - firstTouch) / 1000); }
       track("picks_shown", props);
@@ -826,9 +878,10 @@ const POSTHOG = /*__POSTHOG__*/null;
     touch();
     if (t.name === "rules") track("question_answered", { question: "rules", value: [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value) });
     else if (t.name === "first") track("question_answered", { question: "first", value: [...document.querySelectorAll('input[name="first"]:checked')].map((i) => i.value) });
+    else if (t.name === "when") track("question_answered", { question: "date", value: t.value === "any" ? "any" : t.value === TODAY ? "tonight" : "quick", days_ahead: t.value === "any" ? null : daysAhead(t.value) });
     else track("question_answered", { question: t.name, value: t.name === "budget" && t.value !== "any" ? Number(t.value) : t.value });
     if (t.name === "rules") state.autoRules = [];
-    else state.auto.delete(t.name);
+    else state.auto.delete({ when: "date" }[t.name] || t.name);
     if (t.name === "who") { state.who = t.value; $("ageWrap").hidden = state.who !== "kids"; if (state.who !== "kids") { state.age = null; $("ageOut").textContent = ageText(); } }
     else if (t.name === "mood") state.mood = t.value;
     else if (t.name === "type") state.type = t.value;
@@ -838,12 +891,24 @@ const POSTHOG = /*__POSTHOG__*/null;
       state.first = on.length === 2 ? "both" : on[0] || "";
     }
     else if (t.name === "rules") state.rules = [...document.querySelectorAll('input[name="rules"]:checked')].map((i) => i.value);
+    else if (t.name === "when") { state.date = t.value === "any" ? "" : t.value; if (!state.date) state.tod = ""; syncControls(); }
+    else if (t.name === "tod") { state.tod = t.value === "any" ? "" : t.value; refreshWhenHint(); }
     update();
   });
   $("text").addEventListener("input", () => { touch(); state.text = $("text").value; clearTimeout(typing); typing = setTimeout(() => { applyInference(); syncControls(); update(); }, 450); });
   $("ageUp").addEventListener("click", () => { state.auto.delete("age"); state.age = state.age === null ? 6 : Math.min(17, state.age + 1); $("ageOut").textContent = ageText(); update(); });
   $("ageDown").addEventListener("click", () => { state.auto.delete("age"); state.age = state.age === null || state.age <= 1 ? null : state.age - 1; $("ageOut").textContent = ageText(); update(); });
   $("reset").addEventListener("click", () => { track("start_over_clicked"); state = fresh(); syncControls(); update(); });
+  function daysAhead(iso) { return Math.round((Date.parse(iso) - Date.parse(TODAY)) / 86400000); }
+  $("dateIn").addEventListener("change", (e) => {
+    e.stopPropagation(); touch();
+    const v = $("dateIn").value;
+    state.auto.delete("date");
+    state.date = v && v >= TODAY ? v : "";
+    if (!state.date) state.tod = "";
+    track("question_answered", { question: "date", value: state.date ? "picked" : "any", days_ahead: state.date ? daysAhead(state.date) : null });
+    syncControls(); update();
+  });
   $("budgetRange").addEventListener("change", () => track("price_slider_used", { max_price: Number($("budgetRange").value) }));
   $("budgetRange").addEventListener("input", () => {
     touch();
@@ -854,7 +919,7 @@ const POSTHOG = /*__POSTHOG__*/null;
 
   $("copy").addEventListener("click", async () => {
     if (!lastResult) return;
-    const text = "My Broadway picks:\n" + lastResult.picks.map((p, i) => `${i + 1}. ${p.title} at ${p.theater}, ${money(p)} (typical, not live)`).join("\n") + "\nMade with Broadway Concierge.";
+    const text = "My Broadway picks:\n" + lastResult.picks.map((p, i) => `${i + 1}. ${p.title} at ${p.theater}, ${money(p)} (typical, not live)` + (p.date && p.performances && p.performances.length ? `, ${R.fmtDay(p.date)} at ${p.performances.map(R.fmtTime).join(" & ")}` : "") + (p.official_url ? ` ${p.official_url}` : "")).join("\n") + "\nMade with Broadway Concierge.";
     track("picks_copied");
     try { await navigator.clipboard.writeText(text); $("status").textContent = "Copied your picks."; $("copy").textContent = "Copied"; setTimeout(() => { $("copy").textContent = "Copy my picks"; }, 1800); }
     catch (e) { $("copybox").hidden = false; const t = $("copytext"); t.value = text; t.focus(); t.select(); }

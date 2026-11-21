@@ -15,7 +15,7 @@ How the recommender works:
   3. We check the AI's answer: every title must exist in shows.json, and the theater,
      price and rush info are copied from shows.json, not from the AI.
 """
-import argparse, json, os, re, sys
+import argparse, datetime as dt, json, os, re, sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -83,9 +83,58 @@ def parse_ages(text):
     return [int(n) for n in re.findall(r"\d+", text or "")]
 
 
-def violations(show, max_price=None, kids_ages=None, dealbreakers=None, show_type=None):
+# ---------------------------------------------------------------- dates and performance times
+# Same rules as timesOn / violations in web/recommender.js.
+DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]  # Python weekday() order
+DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+MATINEE_BEFORE = "17:00"  # a performance before 5 PM counts as a matinee
+
+
+def fmt_day(iso):
+    d = dt.date.fromisoformat(iso)
+    return f"{DAY_NAMES[d.weekday()][:3]}, {d.strftime('%b')} {d.day}"
+
+
+def fmt_time(hhmm):
+    h, m = map(int, hhmm.split(":"))
+    return f"{h % 12 or 12}{':%02d' % m if m else ''} {'AM' if h < 12 else 'PM'}"
+
+
+def times_on(show, iso, time_of_day=None):
+    """Performance times ("HH:MM") a show has on a date ("YYYY-MM-DD"), filtered to matinee/evening."""
+    if not iso or not show.get("schedule"):
+        return []
+    if show.get("closes") and iso > show["closes"]:
+        return []
+    times = show["schedule"].get(DAY_KEYS[dt.date.fromisoformat(iso).weekday()], [])
+    if time_of_day == "matinee":
+        return [t for t in times if t < MATINEE_BEFORE]
+    if time_of_day == "evening":
+        return [t for t in times if t >= MATINEE_BEFORE]
+    return list(times)
+
+
+def is_holiday_week(iso):
+    """Thanksgiving week and Dec 21 - Jan 3 often have changed schedules."""
+    d = dt.date.fromisoformat(iso)
+    if iso[5:] >= "12-21" or iso[5:] <= "01-03":
+        return True
+    nov1 = dt.date(d.year, 11, 1)
+    thanksgiving = 1 + (3 - nov1.weekday()) % 7 + 21  # 4th Thursday
+    return d.month == 11 and thanksgiving - 3 <= d.day <= thanksgiving + 3
+
+
+def violations(show, max_price=None, kids_ages=None, dealbreakers=None, show_type=None,
+               date=None, time_of_day=None):
     """Return a list of reasons this show breaks the person's hard limits (empty = fits)."""
     out = []
+    if date:
+        if show.get("closes") and date > show["closes"]:
+            out.append(f"it closes {fmt_day(show['closes'])}")
+        elif not times_on(show, date):
+            out.append(f"it doesn't play on {DAY_NAMES[dt.date.fromisoformat(date).weekday()]}s")
+        elif time_of_day and not times_on(show, date, time_of_day):
+            out.append(f"no {time_of_day} performance that day")
     if show_type in SHOW_TYPES and show.get("genre") != show_type:
         out.append(f"it's a {show.get('genre')}, not a {show_type}")
     if max_price and show["price_low"] > max_price:
@@ -112,12 +161,13 @@ def violations(show, max_price=None, kids_ages=None, dealbreakers=None, show_typ
     return out
 
 
-def closeness(show, max_price=None, kids_ages=None, dealbreakers=None, show_type=None):
+def closeness(show, max_price=None, kids_ages=None, dealbreakers=None, show_type=None,
+              date=None, time_of_day=None):
     """Sort key for near-misses: fewest broken rules first, then the smallest age gap
     and budget overage, then the cheapest."""
     age_gap = max(0, min_age(show) - min(kids_ages)) if kids_ages else 0
     over = max(0, show["price_low"] - max_price) if max_price else 0
-    return (len(violations(show, max_price, kids_ages, dealbreakers, show_type)), age_gap, over, show["price_low"])
+    return (len(violations(show, max_price, kids_ages, dealbreakers, show_type, date, time_of_day)), age_gap, over, show["price_low"])
 
 
 def price_text(show):
@@ -180,7 +230,46 @@ def _find_money(lower):
     return n if 20 <= n <= 2000 else None
 
 
-def infer_answers(text):
+MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+MONTH_RE = r"(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?"
+WEEKDAY_RE = r"(sunday|monday|tuesday|wednesday|thursday|friday|saturday)"
+
+
+def infer_when(lower, today):
+    """Find a date ("tonight", "tomorrow", "this saturday", "Dec 5", "12/5") and matinee/evening."""
+    out = {}
+    t = dt.date.fromisoformat(today)
+    m = None
+    if re.search(r"\b(tonight|today)\b", lower):
+        out["date"] = today
+    elif re.search(r"\btomorrow\b", lower):
+        out["date"] = (t + dt.timedelta(days=1)).isoformat()
+    elif (m := re.search(r"\b(next |this |on )?" + WEEKDAY_RE + r"s?\b", lower)):
+        want = [d.lower() for d in DAY_NAMES].index(m.group(2))
+        ahead = (want - t.weekday()) % 7
+        if m.group(1) == "next " and ahead == 0:
+            ahead = 7
+        out["date"] = (t + dt.timedelta(days=ahead)).isoformat()
+    elif (m := re.search(r"\b" + MONTH_RE + r" (\d{1,2})(?:st|nd|rd|th)?\b", lower)) or \
+            (m := re.search(r"\b(\d{1,2})/(\d{1,2})\b(?!/)", lower)):
+        first = m.group(1)
+        month = int(first) if first.isdigit() else MONTHS.index(first[:3]) + 1
+        day = int(m.group(2))
+        if 1 <= month <= 12 and 1 <= day <= 31:
+            iso = f"{t.year}-{month:02d}-{day:02d}"
+            if iso < today:
+                iso = f"{t.year + 1}{iso[4:]}"
+            out["date"] = iso
+    if re.search(r"\b(matinee|matinees|afternoon)\b", lower):
+        out["time_of_day"] = "matinee"
+    elif re.search(r"\b(tonight|evening|night show|evening show)\b", lower):
+        out["time_of_day"] = "evening"
+    if "date" not in out:
+        out.pop("time_of_day", None)
+    return out
+
+
+def infer_answers(text, today=None):
     """Guess the form answers from a description. Returns only what the text clearly says:
     who, mood, budget (number, or None for any price), showType, age, first, rules."""
     lower = str(text or "").lower()
@@ -250,6 +339,11 @@ def infer_answers(text):
         rules.append("adult themes")
     if rules:
         out["rules"] = rules
+    when = infer_when(lower, today or dt.date.today().isoformat())
+    if "date" in when:
+        out["date"] = when["date"]
+    if "time_of_day" in when:
+        out["timeOfDay"] = when["time_of_day"]
     return out
 
 
@@ -272,7 +366,8 @@ SYSTEM = (
 
 
 def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
-                    dealbreakers=None, first_show=None, client=None, show_type=None):
+                    dealbreakers=None, first_show=None, client=None, show_type=None,
+                    date=None, time_of_day=None):
     """Return {"picks": [...], "assumptions": str, "message": str}.
 
     Every pick has: title, theater, price_range, rush_or_lottery, why_it_fits, caution,
@@ -281,7 +376,8 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
     shows = [s for s in load_shows() if s.get("status") != "closed"]  # closed shows are never recommended
     ages = parse_ages(kids_ages) if who == "kids" else []
     limits = dict(max_price=max_price, kids_ages=ages, dealbreakers=dealbreakers,
-                  show_type=show_type if show_type in SHOW_TYPES else None)
+                  show_type=show_type if show_type in SHOW_TYPES else None,
+                  date=date or None, time_of_day=time_of_day if date else None)
 
     eligible = [s for s in shows if not violations(s, **limits)]
     want = min(3, len(eligible))
@@ -296,6 +392,7 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
             "mood": mood or "not said",
             "max_price_per_ticket": max_price or "no limit",
             "show_type": show_type if show_type in SHOW_TYPES else "either",
+            "date": (fmt_day(date) + (f", {time_of_day}" if time_of_day else "")) if date else "any",
             "dealbreakers": dealbreakers or [],
             "first_broadway_show": first_show if first_show is not None else "not said",
         }
@@ -358,6 +455,16 @@ def recommend_shows(text, who=None, kids_ages="", mood=None, max_price=None,
             else f"Only {len(eligible)} show(s) fit all your limits. The rest are the closest near-misses."
         )
 
+    if date:
+        by_title = {s["title"]: s for s in shows}
+        for p in picks:
+            show = by_title.get(p["title"])
+            p["date"] = date
+            p["performances"] = times_on(show, date, time_of_day) if show else []
+        if is_holiday_week(date):
+            note = (f"{fmt_day(date)} is in a holiday week, when Broadway schedules often change. "
+                    "Check times on the official site before buying.")
+            assumptions = f"{assumptions} {note}".strip() if assumptions else note
     return {"picks": picks, "assumptions": assumptions, "message": message}
 
 
