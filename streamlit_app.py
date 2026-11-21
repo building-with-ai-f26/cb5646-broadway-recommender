@@ -1,10 +1,11 @@
 """Broadway Concierge - show recommender web page. Run with: streamlit run streamlit_app.py"""
 import streamlit as st
 
+import datetime as dt
 import time
 
 from analytics import new_visitor_id, track
-from app import DEALBREAKERS, LONG_RUNTIME_MIN, infer_answers, recommend_shows
+from app import DEALBREAKERS, LONG_RUNTIME_MIN, fmt_day, fmt_time, infer_answers, recommend_shows
 
 st.set_page_config(page_title="Broadway Concierge", page_icon="🎭")
 
@@ -19,7 +20,7 @@ st.write("Tell us about your night and get 3 Broadway shows that fit your group,
 
 # Form defaults live in session_state so the description can fill them in.
 DEFAULTS = {"who": "(not sure)", "kids_ages": "", "mood": "(any)", "show_type": "Either", "first_show": "Not said",
-            "no_limit": False, "max_price": 150, "dealbreakers": []}
+            "no_limit": False, "max_price": 150, "dealbreakers": [], "go_date": None, "time_of_day": "Any time"}
 for key, value in DEFAULTS.items():
     st.session_state.setdefault(key, value)
 st.session_state.setdefault("manual", set())   # fields the person changed by hand: never overwritten
@@ -57,6 +58,10 @@ def prefill():
             filled.append("max_price")
     if got.get("first") == "yes":
         put("first_show", "Yes")
+    if "date" in got:
+        put("go_date", dt.date.fromisoformat(got["date"]))
+    if "timeOfDay" in got:
+        put("time_of_day", got["timeOfDay"].capitalize())
     if got.get("rules") and "dealbreakers" not in ss.manual:
         ss.dealbreakers = sorted(set(ss.dealbreakers) | set(got["rules"]), key=DEALBREAKERS.index)
         filled.append("dealbreakers")
@@ -73,7 +78,7 @@ text = st.text_area(
     height=120,
 )
 LABELS = {"who": "who's going", "kids_ages": "kids' ages", "mood": "mood", "show_type": "musical or play",
-          "max_price": "max price", "no_limit": "no budget limit", "first_show": "first Broadway show", "dealbreakers": "dealbreakers"}
+          "max_price": "max price", "no_limit": "no budget limit", "go_date": "date", "time_of_day": "time of day", "first_show": "first Broadway show", "dealbreakers": "dealbreakers"}
 if st.session_state.filled:
     st.caption("✨ Filled in from your description: " + ", ".join(LABELS[k] for k in st.session_state.filled)
                + ". Change anything below.")
@@ -99,6 +104,14 @@ with col2:
     no_limit = st.checkbox("No budget limit", key="no_limit", on_change=mark_manual, args=("no_limit",))
     max_price = None if no_limit else st.slider("Max price per ticket ($)", 40, 400, step=10, key="max_price",
                                                 on_change=mark_manual, args=("max_price",))
+    go_date = st.date_input("When are you going? (optional)", key="go_date", min_value=dt.date.today(),
+                            format="MM/DD/YYYY", on_change=mark_manual, args=("go_date",),
+                            help="Only shows playing that day are picked. Times come from a regular week; "
+                                 "holiday weeks can differ, so confirm on the show's site.")
+    time_of_day = "Any time"
+    if go_date:
+        time_of_day = st.radio("Time of day", ["Any time", "Matinee", "Evening"], horizontal=True, key="time_of_day",
+                               on_change=mark_manual, args=("time_of_day",))
     dealbreakers = st.multiselect(
         "Dealbreakers",
         DEALBREAKERS,
@@ -125,6 +138,8 @@ if st.button("Find my shows", type="primary"):
                 dealbreakers=dealbreakers,
                 first_show={"Yes": True, "No": False}.get(first_show),
                 show_type=show_type.lower() if show_type != "Either" else None,
+                date=go_date.isoformat() if go_date else None,
+                time_of_day=time_of_day.lower() if go_date and time_of_day != "Any time" else None,
             )
         except RuntimeError as e:  # missing API key
             st.error(str(e))
@@ -139,7 +154,8 @@ if st.button("Find my shows", type="primary"):
     st.session_state.shown_once = True
     track(
         st.session_state.visitor, "picks_shown",
-        who=who, mood=mood, show_type=show_type, max_price=max_price if max_price is not None else "any",
+        who=who, mood=mood, show_type=show_type, date_set=bool(go_date),
+        days_ahead=(go_date - dt.date.today()).days if go_date else None, max_price=max_price if max_price is not None else "any",
         dealbreakers=list(dealbreakers), first_show=first_show,
         has_kids_ages=bool(kids_ages.strip()), text_length=len(text.strip()),
         picks=[p["title"] for p in result["picks"]],
@@ -157,11 +173,12 @@ if st.button("Find my shows", type="primary"):
             st.write(p["why_it_fits"])
             st.write(f"**Heads up:** {p['caution']}")
             st.write(f"**Price:** {p['price_range']}")
+            if p.get("performances"):
+                st.write(f"**{fmt_day(p['date'])}:** " + " & ".join(fmt_time(t) for t in p["performances"]))
             if p["rush_or_lottery"]:
                 st.write("🎟️ Rush or lottery tickets are often available. Check the official show site.")
             if p.get("official_url"):
-                label = "Official tickets" if p.get("official_url_kind") == "tickets" else "Official show site"
-                st.link_button(f"{label} ↗", p["official_url"])
+                st.link_button("Get tickets on the official site ↗", p["official_url"])
     if result["assumptions"]:
         st.caption(f"Assumptions we made: {result['assumptions']}")
     st.caption("Prices are typical ranges from a hand-built catalog, not live. Always confirm on the official ticket seller.")

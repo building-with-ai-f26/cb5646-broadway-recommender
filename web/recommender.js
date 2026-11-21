@@ -32,9 +32,50 @@
   }
 
   /** Reasons this show breaks the person's hard limits (empty list = it fits). */
+  // ------------------------------------------------------------ dates and performance times
+
+  const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const MATINEE_BEFORE = "17:00"; // a performance before 5 PM counts as a matinee
+
+  /** "2026-11-21" -> a UTC Date (no time-zone drift). */
+  function isoToDate(iso) { const [y, m, d] = String(iso).split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); }
+  function dateToIso(dt) { return dt.toISOString().slice(0, 10); }
+  function addDays(iso, n) { const dt = isoToDate(iso); dt.setUTCDate(dt.getUTCDate() + n); return dateToIso(dt); }
+  function weekdayOf(iso) { return isoToDate(iso).getUTCDay(); }
+  function fmtDay(iso) { const dt = isoToDate(iso); return `${DAY_NAMES[dt.getUTCDay()].slice(0, 3)}, ${MONTHS[dt.getUTCMonth()]} ${dt.getUTCDate()}`; }
+  function fmtTime(hhmm) {
+    const [h, m] = hhmm.split(":").map(Number);
+    return `${h % 12 || 12}${m ? ":" + String(m).padStart(2, "0") : ""} ${h < 12 ? "AM" : "PM"}`;
+  }
+  /** Thanksgiving week and Dec 21 - Jan 3 often have changed schedules. */
+  function isHolidayWeek(iso) {
+    const dt = isoToDate(iso), y = dt.getUTCFullYear(), md = iso.slice(5);
+    if (md >= "12-21" || md <= "01-03") return true;
+    const nov1 = new Date(Date.UTC(y, 10, 1)).getUTCDay();
+    const thanksgiving = 1 + ((4 - nov1 + 7) % 7) + 21; // 4th Thursday
+    const day = dt.getUTCMonth() === 10 ? dt.getUTCDate() : -99;
+    return day >= thanksgiving - 3 && day <= thanksgiving + 3;
+  }
+  /** Performance times ("HH:MM") a show has on a date, filtered to matinee/evening. */
+  function timesOn(show, iso, timeOfDay) {
+    if (!iso || !show.schedule) return [];
+    if (show.closes && iso > show.closes) return [];
+    const times = show.schedule[DAY_KEYS[weekdayOf(iso)]] || [];
+    if (timeOfDay === "matinee") return times.filter((t) => t < MATINEE_BEFORE);
+    if (timeOfDay === "evening") return times.filter((t) => t >= MATINEE_BEFORE);
+    return times.slice();
+  }
+
   function violations(show, limits) {
-    const { maxPrice, kidsAges, dealbreakers, showType } = limits || {};
+    const { maxPrice, kidsAges, dealbreakers, showType, date, timeOfDay } = limits || {};
     const out = [];
+    if (date) {
+      if (show.closes && date > show.closes) out.push(`it closes ${fmtDay(show.closes)}`);
+      else if (!timesOn(show, date, null).length) out.push(`it doesn't play on ${DAY_NAMES[weekdayOf(date)]}s`);
+      else if (timeOfDay && !timesOn(show, date, timeOfDay).length) out.push(`no ${timeOfDay} performance that day`);
+    }
     if (SHOW_TYPES.includes(showType) && show.genre !== showType)
       out.push(`it's a ${show.genre}, not a ${showType}`);
     if (maxPrice && show.price_low > maxPrice)
@@ -293,6 +334,18 @@
     return bits.join(" ") || "Check the official show page for details.";
   }
 
+  /** Add the performance times on the chosen date to each pick (for the card). */
+  function withTimes(picks, shows, input) {
+    if (!input.date) return picks;
+    const byTitle = Object.fromEntries(shows.map((s) => [s.title, s]));
+    for (const p of picks) {
+      const show = byTitle[p.title];
+      p.date = input.date;
+      p.performances = show ? timesOn(show, input.date, input.timeOfDay || null) : [];
+    }
+    return picks;
+  }
+
   function makePick(show, why, caution, fits) {
     return { ...catalogFields(show), genre: show.genre, runtime_min: show.runtime_min, intermission: show.intermission,
       age: show.age, status: show.status, opens: show.opens || null,
@@ -303,7 +356,8 @@
 
   function prepare(shows, input) {
     const ages = input.who === "kids" ? parseAges(input.kidsAges) : [];
-    const limits = { maxPrice: input.maxPrice || null, kidsAges: ages, dealbreakers: input.dealbreakers || [], showType: input.showType || null };
+    const limits = { maxPrice: input.maxPrice || null, kidsAges: ages, dealbreakers: input.dealbreakers || [], showType: input.showType || null,
+      date: input.date || null, timeOfDay: input.date ? input.timeOfDay || null : null };
     const ctx = analyzeText(input.text, shows);
     const eligible = shows.filter((s) => !violations(s, limits).length);
     const ranked = eligible
@@ -317,6 +371,8 @@
     if (!input.mood && !ctx.moods.size && !ctx.likes.length) notes.push("No mood or taste given, so I ranked by group, first-timer fit and budget.");
     if (ctx.dislikes.length) notes.push("Treated these as dislikes from your text: " + joinList(ctx.dislikes.map((t) => t.name)) + ".");
     if (ctx.loved.length) notes.push("Assumed you have already seen " + joinList(ctx.loved.map((s) => s.title)) + ".");
+    if (input.date && isHolidayWeek(input.date))
+      notes.push(`${fmtDay(input.date)} is in a holiday week, when Broadway schedules often change. Check times on the official site before buying.`);
     if (kidsWithoutAge(input))
       notes.push("No age given for the kids, so I favored shows for school-age kids. Set the youngest age to apply a hard age limit.");
     return notes.join(" ");
@@ -355,6 +411,7 @@
     const picks = slice.map((r) => ({ ...makePick(r.show, whyText(r.show, r.reasons), cautionText(r.show), true), rank: r.rank }));
     const message = addNearMisses(picks, shows, limits, eligible.length);
     picks.forEach((p, i) => { if (!p.rank) p.rank = i + 1; });
+    withTimes(picks, shows, input);
     return { picks, assumptions: assumptionsFor(input, ctx), message, source: "built-in", eligibleCount: eligible.length, offset: start };
   }
 
@@ -389,6 +446,7 @@
       mood: input.mood || "not said",
       max_price_per_ticket: input.maxPrice || "no limit",
       show_type: input.showType || "either",
+      date: input.date ? fmtDay(input.date) + (input.timeOfDay ? ", " + input.timeOfDay : "") : "any",
       dealbreakers: input.dealbreakers || [],
       first_broadway_show: input.firstShow === null || input.firstShow === undefined ? "not said" : input.firstShow,
     };
@@ -433,6 +491,7 @@
     for (const p of picks) if (!p.caution) p.caution = cautionText(byTitle[p.title]);
     const message = addNearMisses(picks, shows, prepared.limits, prepared.eligible.length);
     picks.forEach((p, i) => { p.rank = i + 1; });
+    withTimes(picks, shows, input);
     const assumptions = String((data && data.assumptions) || "").trim() || assumptionsFor(input, prepared.ctx);
     return { picks, assumptions, message, source: "claude", eligibleCount: prepared.eligible.length, offset: 0 };
   }
@@ -472,7 +531,43 @@
     return n >= 20 && n <= 2000 ? n : undefined;
   }
 
-  function inferAnswers(text) {
+  const MONTH_RE = "(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?";
+  const WEEKDAY_RE = "(sunday|monday|tuesday|wednesday|thursday|friday|saturday)";
+
+  /** Find a date ("tonight", "tomorrow", "this saturday", "Dec 5", "12/5") and matinee/evening. `today` is "YYYY-MM-DD". */
+  function inferWhen(lower, today) {
+    const out = {};
+    let m;
+    if (/\b(tonight|today)\b/.test(lower)) out.date = today;
+    else if (/\btomorrow\b/.test(lower)) out.date = addDays(today, 1);
+    else if ((m = new RegExp("\\b(next |this |on )?" + WEEKDAY_RE + "s?\\b").exec(lower))) {
+      const want = DAY_NAMES.map((d) => d.toLowerCase()).indexOf(m[2]);
+      let ahead = (want - weekdayOf(today) + 7) % 7;
+      if (m[1] === "next " && ahead === 0) ahead = 7;
+      out.date = addDays(today, ahead);
+    } else if ((m = new RegExp("\\b" + MONTH_RE + " (\\d{1,2})(?:st|nd|rd|th)?\\b").exec(lower)) ||
+               (m = /\b(\d{1,2})\/(\d{1,2})\b(?!\/)/.exec(lower))) {
+      const month = isNaN(Number(m[1])) ? ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(m[1].slice(0, 3)) + 1 : Number(m[1]);
+      const day = Number(m[2]);
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        let year = Number(today.slice(0, 4));
+        let iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        if (iso < today) iso = `${year + 1}${iso.slice(4)}`;
+        out.date = iso;
+      }
+    }
+    if (/\b(matinee|matinees|afternoon)\b/.test(lower)) out.timeOfDay = "matinee";
+    else if (/\b(tonight|evening|night show|evening show)\b/.test(lower)) out.timeOfDay = "evening";
+    if (!out.date) delete out.timeOfDay;
+    return out;
+  }
+
+  function todayIso() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function inferAnswers(text, today) {
     const lower = String(text || "").toLowerCase();
     const out = {};
     const said = (re) => { const m = re.exec(lower); return m && !negativeBefore(lower, m.index) ? m : null; };
@@ -523,11 +618,13 @@
     if (/\b(nothing (?:too )?loud|not too loud|quiet|sensitive to (?:noise|sound))\b/.test(lower)) rules.push("loud effects");
     if (/\b(nothing (?:too )?dark|nothing heavy|no heavy|nothing sad|keep it light|no violence)\b/.test(lower)) rules.push("adult themes");
     if (rules.length) out.rules = rules;
+    Object.assign(out, inferWhen(lower, today || todayIso()));
     return out;
   }
 
   return {
-    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, openShows, minAge, parseAges, violations, closeness, priceText,
+    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, openShows,
+    timesOn, fmtDay, fmtTime, addDays, weekdayOf, isHolidayWeek, todayIso, DAY_NAMES, minAge, parseAges, violations, closeness, priceText,
     analyzeText, scoreShow, recommendLocal, recommendWithAI, buildAiPrompt, prepare, parseJson, runtimeText, previewsNote,
   };
 });
