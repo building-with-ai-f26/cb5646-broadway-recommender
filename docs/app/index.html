@@ -1065,13 +1065,9 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   optionGroup("mood", "mood", MOOD, "radio", true, true);
   optionGroup("type", "type", TYPE, "radio", true, true);
 
-  // When: quick picks for the next few days, plus a full date picker.
+  // When: Tonight / Tomorrow / Any date, plus a date picker for anything else.
   const TODAY = R.todayIso();
-  const WHEN = [["any", "Any date"], [TODAY, "Tonight"], [R.addDays(TODAY, 1), "Tomorrow"]];
-  for (let i = 2; i <= 6; i++) {
-    const iso = R.addDays(TODAY, i), wd = R.weekdayOf(iso);
-    if (wd === 5 || wd === 6 || wd === 0) WHEN.push([iso, R.fmtDay(iso)]);
-  }
+  const WHEN = [[TODAY, "Tonight"], [R.addDays(TODAY, 1), "Tomorrow"], ["any", "Any date"]];
   optionGroup("whenQuick", "when", WHEN, "radio", false, false);
   optionGroup("tod", "tod", [["any", "Any time"], ["matinee", "Matinee (before 5 PM)"], ["evening", "Evening"]], "radio", false, false);
   $("dateIn").min = TODAY; $("dateIn").max = R.addDays(TODAY, 365);
