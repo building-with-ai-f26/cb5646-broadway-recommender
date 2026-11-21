@@ -174,11 +174,11 @@
     <section id="live-demo">
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
-        <strong>Current Status:</strong> Build 2 shipped (Nov 14): a live web app anyone can use with no account or API key, plus the local Streamlit app that uses Claude. PostHog is installed on both and on this page.<br />
-        <strong>Demo:</strong> Screenshot of the current web version after choosing the "Date night, $150 max" example. The four required questions (who, mood, musical or play, price) are filled in from the description and marked "From your description"; the result is three picks with a cover, status, price, runtime, ages, why it fits and a heads-up.<br />
+        <strong>Current Status:</strong> Build 3 in progress (updated Nov 20): the live web app (no account or API key) and the local Streamlit app, which now returns picks from Claude with my own key. New this week: an optional date and time-of-day filter, a link to each show's official site, and a weekly automatic catalog update. PostHog runs on both apps and this page.<br />
+        <strong>Demo:</strong> Screenshot of the current web version after choosing the "Date night, $150 max" example. The four required questions (who, mood, musical or play, price) are filled in from the description and marked "From your description"; the result is three picks with a cover, status, price, runtime, ages, why it fits, a heads-up and a "Get tickets on the official site" button. The optional "When are you going?" question is below price.<br />
         <strong>Try it:</strong> <a href="app/">web version of the show recommender</a> (33 shows running or opening; catalog updated Nov 20, 2026). Pick an example or describe your night, check the four answers it fills in, and the picks update as you go.
       </p>
-      <img src="app-screenshot.png" alt="Broadway Concierge web version on Nov 14: the Date night example fills in date night, cry, musical and under $150 from its description, with three picks: Maybe Happy Ending, The Great Gatsby and The Outsiders" style="max-width:100%; border:1px solid #e5e7eb; border-radius:8px;" />
+      <img src="app-screenshot.png" alt="Broadway Concierge web version on Nov 20: the Date night example fills in date night, cry, musical and under $150 from its description; the optional When are you going question shows Tonight, Tomorrow and Any date; three picks, Maybe Happy Ending, The Great Gatsby and The Outsiders, each ending with a Get tickets on the official site button" style="max-width:100%; border:1px solid #e5e7eb; border-radius:8px;" />
       <p class="meta">
         This screenshot is the web version, which ranks shows with built-in rules in the browser and needs no API key. Still to add: a screenshot of the local Streamlit app returning picks from Claude with my own API key.
       </p>
@@ -206,9 +206,9 @@ Decide. They buy with confidence, walk away from the scam, or switch to an offic
 
       <h3>2. Scope & Explicit Non-Goals</h3>
       <ul>
-        <li><strong>In Scope (Core Workflow):</strong> Describe your night, or start from an example, and get 3 shows that fit. Four answers are required: who is going (solo, date, friends, family of adults, or taking kids with the youngest age), mood, musical or play, and the most you will pay per ticket. The app fills these in from the description, and the person can change any of them. Optional: first time on Broadway, and rule-outs (no jukebox musicals, no crude or sexual content, no adult themes, under 2h15, not too loud, no intermission). Each pick shows why it fits, one honest caution, the theater, runtime, ages and a typical price range.
+        <li><strong>In Scope (Core Workflow):</strong> Describe your night, or start from an example, and get 3 shows that fit. Four answers are required: who is going (solo, date, friends, family of adults, or taking kids with the youngest age), mood, musical or play, and the most you will pay per ticket. The app fills these in from the description, and the person can change any of them. Optional: when they are going (Tonight, Tomorrow, Any date or a picked date, then matinee or evening), first time on Broadway, and rule-outs (no jukebox musicals, no crude or sexual content, no adult themes, under 2h15, not too loud, no intermission). Each pick shows why it fits, one honest caution, the theater, runtime, ages, a typical price range, the times on the chosen day, and a link to the show's official site to buy tickets.
 
-The tool picks only from a hand-built catalog of shows that are running or about to open. Hard limits (price, kids' age, show type, rule-outs) are applied in code before anything is ranked, so a pick can never break them; if fewer than three shows fit, the closest near-misses are labeled with what they break.
+The tool picks only from a hand-built catalog of shows that are running or about to open. Hard limits (price, kids' age, show type, rule-outs, and the chosen date: still running and playing that day) are applied in code before anything is ranked, so a pick can never break them; if fewer than three shows fit, the closest near-misses are labeled with what they break.
 
 Secondary feature (built in the command-line prototype, not yet in the web app): paste a resale listing and get a low, medium, or high risk rating with the specific red flags. This is the "before you pay" safety check once they've picked a show.</li>
         <li><strong>Out of Scope #1:</strong> Live prices or seat inventory (prices are typical ranges and are labeled that way)</li>
@@ -219,21 +219,21 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
       <p><strong>Riskiest Assumption:</strong> Broadway Concierge takes a user’s request, loads a hand-built catalog of running shows, and sends both to the Claude API, which picks three fits with a reason, a caution, and a typical price. The same pattern powers the secondary resale checker, which compares a pasted listing against a red-flag checklist and theater seating info. There’s no database and no live data, so the riskiest assumption is that the catalog is accurate and current enough to trust. Closed shows, stale prices, or wrong content warnings would sink user confidence, so verify every show and test with a few sample requests.</p>
       <p><strong>What Week 2 showed:</strong> The risk was real. The Build 1 catalog, written from memory, covered only 8 of the 33 shows now on Broadway, and several current shows close within weeks. The catalog was rebuilt on Nov 13 against Broadway Direct's what's-on guide, with a date on every entry and closing notes where known. Ages, content notes and the high end of each price range are still my estimates and are labeled as estimates on every card. Keeping the catalog current is now a weekly task, not a one-time setup.</p>
-      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, musical or play, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages, show type or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>. There, the person can start from an example or describe the night in words, and the four required questions are filled in from that text; anything they pick themselves is never overwritten. The Streamlit app reads descriptions with the same rules. Both apps send anonymous usage events to PostHog: answers chosen, picks shown and buttons used, never the text a person types.</p>
+      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, musical or play, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages, show type or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>. There, the person can start from an example or describe the night in words, and the four required questions are filled in from that text; anything they pick themselves is never overwritten. The Streamlit app reads descriptions with the same rules. Both apps send anonymous usage events to PostHog: answers chosen, picks shown and buttons used, never the text a person types. Each catalog entry also holds the show's official site, its weekly performance times (a regular week, from BroadwayWorld's weekly grid) and its announced closing date. Every Monday at 6:58 AM a scheduled Claude task checks Broadway Direct, TDF, IBDB and BroadwayWorld, removes closed shows, adds new ones (including previews), refreshes times, closing dates and the show counts, runs the tests, and publishes the update only if they pass.</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
         <div class="stat-box">
           <div class="stat-label">Cumulative Build Spend</div>
-          <div class="stat-value">$21.78 through Build 2 (my Claude subscription; Build 2 added $0)</div>
+          <div class="stat-value">$27.78 through Build 3 so far ($21.78 Claude subscription from Build 1, $0 extra in Build 2, $6 Claude API in Build 3)</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Est. Cost Per User Run</div>
           <div class="stat-value">About $0.02 per request (Claude Sonnet 5.5 at $2 per million input and $10 per million output tokens; roughly 8,000 tokens in and 400 out with the 33-show catalog)</div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">User Evidence (Analytics from Build 2)</div>
-          <div class="stat-value">PostHog installed Nov 13 on this page, the web app and the Streamlit app, and confirmed receiving events from the live pages. Through Nov 14 every event comes from one visitor, me, testing: 24 pageviews, 23 answers, 15 sets of picks, 2 forms filled from a description, 1 "different picks" click. No events from the Streamlit app yet (it has not been run with the PostHog token). No outside users yet, so there is no user evidence to report.</div>
+          <div class="stat-label">User Evidence (Analytics, Nov 13 to 20)</div>
+          <div class="stat-value">PostHog confirmed working on this page, the web app and (since Nov 20) the Streamlit app. Nov 13 to 20: 50 pageviews, 67 answers, 58 sets of picks (2 from Streamlit), 19 forms filled from a description, 6 "different picks" clicks, 1 copy, across 14 anonymous visitor IDs. As far as I know these are my own tests on different browsers and devices; no outside users are confirmed yet, so this is not user evidence. Next: share the link with Anne and a few theatergoers and watch whether they reach three picks and click through to an official site.</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Sponsor Call (Week 6)</div>
@@ -296,9 +296,25 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
       <div class="log-entry">
         <h3>Build 3 · Build.exe: The Core Workflow (Due Nov 23)</h3>
         <ul>
-          <li><strong>What shipped:</strong> Not started.</li>
-          <li><strong>What broke / changed in PRD:</strong> Not started.</li>
-          <li><strong>Cost & time this week:</strong> Not started.</li>
+          <li><strong>What shipped (so far, Nov 20, pull requests #13 to #16):</strong>
+            <ul>
+              <li><strong>Live run with my own key:</strong> the local Streamlit app now returns picks from Claude (screenshot added to the Build 1 entry), and its PostHog events arrive.</li>
+              <li><strong>Official site on every pick:</strong> each show links to its own official website, checked against its TDF listing or its own site (two supplied by me). The link is a full button at the end of the card, "Get tickets on the official site", placed after "Why it fits" and "Heads up", where the person has decided and is ready to act.</li>
+              <li><strong>Optional date filter:</strong> "When are you going?" with Tonight, Tomorrow, Any date or a picked date, then an optional Matinee / Evening. Only shows still running and playing that day are picked, each pick shows that day's times, and a hint says how many shows play that day (most are dark on Mondays). Typing "Saturday matinee" or "Dec 5" fills it in.</li>
+              <li><strong>Catalog kept current automatically:</strong> a scheduled task runs every Monday to remove closed shows, add new ones and previews, refresh weekly times and closing dates and update the counts, and publishes only when the tests pass. I get a phone notification with what changed.</li>
+              <li><strong>Tests:</strong> 39 offline checks for the web logic and 9 for the Python app, all passing, including shared date and description cases so both apps behave the same.</li>
+            </ul>
+          </li>
+          <li><strong>What broke / changed in PRD:</strong>
+            <ul>
+              <li>The first live Streamlit run crashed on every request ("'ThinkingBlock' object has no attribute 'text'"): the current Claude model can send a thinking block before the answer, and the app read only the first block. Fixed in #13 by reading every text block.</li>
+              <li>The catalog went stale within a week: School Girls closed Nov 15 but could still be recommended, and Maybe Happy Ending's note still says tickets run only through Nov 22 while Broadway Direct now lists a longer run. School Girls is removed (33 shows), and these checks are now the weekly task's job instead of mine.</li>
+              <li>I could not find a show website for two shows (Other Desert Cities, Paranormal Activity), so I supplied them myself after reviewing every link.</li>
+              <li>Performance times are one regular week, not live. Holiday weeks (Thanksgiving, Dec 21 to Jan 3) get a warning to check times, and "Tonight" does not yet hide shows whose curtain has already gone up.</li>
+              <li>Scope grew from "who, mood, price" to "when" as well, because a show that is dark or closed on the night someone can go is not a real recommendation.</li>
+            </ul>
+          </li>
+          <li><strong>Cost & time this week:</strong> $6 · hours: to fill in. The $6 is Claude API spend this week (my own key, used by the local Streamlit app); building still ran on the same Claude subscription ($0 extra); PostHog free tier; GitHub Pages free.</li>
         </ul>
       </div>
 
