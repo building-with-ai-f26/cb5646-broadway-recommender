@@ -1,0 +1,50 @@
+# Security Review — Broadway Concierge
+
+Reviewed Nov 21, 2026, with Claude as my coding agent. The fixes are in pull requests #21 to #24 and the GitHub repo settings (#10 and #11 below).
+
+## What kind of app this is
+
+**AI with no database.** Neither part has sign-in or user accounts.
+
+| Part | Where it runs | AI? | Saves data? |
+|---|---|---|---|
+| Web app + product page | Public, on GitHub Pages (`docs/`) | No. Picks are worked out in the visitor's browser. | No database. It keeps two kinds of data: (1) the "shows I've seen" list, stored only in that visitor's own browser (`localStorage`), and (2) anonymous usage events sent to PostHog with the public project key. Typed text is never sent. |
+| Streamlit app | My own laptop only (not deployed) | Yes. It calls the Claude API with my key from `.env`. | No database. It sends anonymous usage events to PostHog (typed text is never sent, only its length). |
+
+The only paid API is Claude, and only the local Streamlit app calls it.
+
+## What I checked, what I found, what I fixed
+
+| # | Check | How | Result | Fix |
+|---|---|---|---|---|
+| 1 | **Public key can't change data** | Backed up the baseline (PostHog event count). Then, in the live site's browser console, used the public `phc_` key to try to read events, run a query, add a row through the data API and delete a test visitor. | Reading, querying, adding through the API and deleting were all **rejected** (401/403). Sending one new event through the normal ingest endpoint was **accepted**, by design: that's how every visitor's browser sends analytics. All 719 baseline events were still there afterwards. | None needed. The public key can only add events; it can't read, change or delete anything. |
+| 2 | **No exposed secret keys** | Searched the live site (both pages and every script they load) and the repo (current files plus all 22 branches and 56 commits of history) for `sb_secret_`, `service_role`, `sk-or-`, `sk-ant-`, `sk-proj-`, `sk_live_`, plus PostHog personal (`phx_`), GitHub, AWS, Google and Slack key formats. | **No real keys anywhere.** The matches were a placeholder in `.env.example` (`sk-or-v1-replace-with-your-key`) and warnings in the docs. The only key on the live site is the public PostHog `phc_` key, which is meant to be public. `.env` is in `.gitignore`. | None needed. |
+| 3 | **AI route rate limit** | Clicked "Find my shows" 30 times in a row in the real Streamlit app, with Claude swapped for a fake so it cost nothing (`tests/test_rate_limit_streamlit.py`). | **Before:** no rate limit. **After:** requests 1–10 went through; 11–30 were blocked with "Please try again in about 10 min." (Streamlit's equivalent of a `429`). Claude was called exactly 10 times. The first test run let all 30 through: the test tool gives each click a different fake IP, so every click looked like a new visitor. | **#22:** 10 Claude requests per visitor per 10 minutes, plus 60 per hour for everyone together (so new sessions can't get around it). The app now uses an IP only when it's a real address, otherwise the browser session. A blocked request never calls Claude and records a `rate_limited` event. |
+| 4 | **Spending cap** | Account setting. | No cap before. | I set a **hard $10/month spend limit** in the Claude Console (Settings → Limits). My Build 3 API spend was $6. |
+| 5 | **File storage** | Searched the code and live page for uploads and storage services (Supabase, S3, Google Cloud, Azure, R2, Firebase, Cloudinary). | **Not applicable.** No file uploads and no storage buckets. The live page only talks to GitHub Pages, Google Fonts and PostHog. | None needed. |
+| 6 | **Protect production from the agent** | Reviewed what an agent could break. `main` is production: merging publishes the live site. | No written limits for the agent. | **#21:** AGENTS.md section 5, "Ask Me First": merging to `main`, force pushes and history rewrites, deletes, repo/Pages settings, PostHog data, scheduled tasks and `.env`/keys all need my explicit "yes". `.claude/settings.json` makes Claude Code prompt for 20 of these commands. |
+| 7 | **Backups** | There's no database. | Code, catalog and live site are versioned in git on GitHub. The PostHog events aren't. | Recorded the event count before testing. AGENTS.md explains how to export PostHog events as CSV before any risky analytics change. |
+| 8 | **Dependency audit** | `pip-audit` on `requirements.txt`, at both the newest versions and the oldest versions it allowed. `npm audit` doesn't apply: there's no `package.json`. | Newest versions were clean, but `streamlit>=1.30` still allowed **77 known vulnerabilities**: Streamlit 1.30 (6), Pillow 10.4 (69), protobuf 4.25 (2). | **#24:** minimum versions raised to the tested ones (Streamlit 1.67.0, anthropic 2.12.0, posthog 8.1.0, python-dotenv 1.2.4), plus security minimums for Pillow 13.0.0 and protobuf 6.33.5. Re-audited at the oldest and newest allowed versions: no known vulnerabilities. Installs now use `pip install -U -r requirements.txt`; my laptop is updated. |
+| 9 | **Untrusted text shown on the page** | Checked how the web app and Streamlit display text. | The web app uses `innerHTML` only for its own fixed icons; show and user text is added as plain text. Streamlit never uses `unsafe_allow_html`. Claude's picks are checked against the catalog, so theaters, prices and links always come from my data, not from the AI. | None needed. |
+| 10 | **Production branch protection** | Checked `main`'s settings through the GitHub API. | `main` wasn't protected: anyone with write access, or an agent ignoring AGENTS.md, could push straight to the live site. | Added a branch protection rule on `main`: a pull request is required (0 approvals, since I work alone), no one can bypass it (admins included), and force pushes and branch deletion are blocked. **Tested:** a direct push of an empty commit to `main` was rejected with "Changes must be made through a pull request." |
+| 11 | **GitHub key scanning and Dependabot** | Checked the repo's Advanced Security settings. | Secret scanning, push protection, the dependency graph and Dependabot security updates were off on this public repo. | Turned on Secret Protection (secret scanning), push protection (GitHub blocks pushes that contain a known key format), the dependency graph and Dependabot security updates (Dependabot opens a PR when a package needs a fix). Dependabot alerts were already on. Confirmed through the GitHub API. |
+
+## Remaining issues
+
+1. **Anyone can send fake analytics events.** The public PostHog key is in the page, so someone could add junk events and skew my numbers. They can't read or delete anything. If it happens, filter those events out in PostHog.
+2. **The Monday catalog task merges to `main` without asking.** This is the one intended exception. It still has to go through a pull request (branch protection), can only change the show catalog and rebuilt app, and only merges when tests pass, but it does publish to production unattended. There's no automated test run on GitHub (CI) to require before merging; tests run before each merge instead.
+3. **The rate limit is only good enough for local use.** Its counters live in memory: they reset when the app restarts and aren't shared across servers. If the app were hosted, `X-Forwarded-For` can be faked unless the host's proxy sets it. The 60-per-hour cap for everyone and the $10 Console cap remain the backstop.
+4. **Third-party scripts run on the live site.** PostHog's script and Google Fonts load from their own servers, without a pinned version or integrity check, and the site has no Content Security Policy (GitHub Pages can't send security headers). If one of those services were compromised, its code would run on my page.
+5. **Dependencies have minimum versions, not exact ones.** New vulnerabilities will keep appearing. Dependabot now watches for these and opens fix PRs; `pip-audit -r requirements.txt` (in AGENTS.md) is the manual check. Dependabot PRs still need my review and merge.
+6. **The "seen shows" list is stored in the browser.** Anyone using the same browser on a shared computer can see it. It contains only show titles.
+7. **Typed descriptions go to Anthropic.** In the Streamlit app, what a visitor types is sent to Claude to rank shows. It is never sent to PostHog.
+8. **The Streamlit app isn't deployed.** If that changes: put the key in Streamlit Community Cloud's Secrets settings (never in the repo), keep the $10 cap, and re-run the 30-click test against the hosted URL.
+
+## How to re-run these checks
+
+```
+pip install pip-audit && pip-audit -r requirements.txt     # dependencies
+python tests/test_rate_limit_streamlit.py                    # 30-click rate-limit test (free, fake Claude)
+python test_recommender.py && node web/test_core.js          # app logic
+git log -p --all | grep -E "sk-ant-|sk-or-|sk-proj-|sk_live_|sb_secret_|service_role|phx_"   # secrets in history
+```
