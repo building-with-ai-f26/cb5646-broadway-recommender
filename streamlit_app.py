@@ -5,7 +5,7 @@ import datetime as dt
 import time
 
 from analytics import new_visitor_id, track
-from app import DEALBREAKERS, LONG_RUNTIME_MIN, fmt_day, fmt_time, infer_answers, recommend_shows
+from app import DEALBREAKERS, LONG_RUNTIME_MIN, fmt_day, fmt_time, infer_answers, load_shows, recommend_shows
 
 st.set_page_config(page_title="Broadway Concierge", page_icon="🎭")
 
@@ -112,6 +112,8 @@ with col2:
     if go_date:
         time_of_day = st.radio("Time of day", ["Any time", "Matinee", "Evening"], horizontal=True, key="time_of_day",
                                on_change=mark_manual, args=("time_of_day",))
+    seen = st.multiselect("Shows you've already seen (optional)", sorted(s["title"] for s in load_shows()), key="seen",
+                          help="We won't suggest these.")
     dealbreakers = st.multiselect(
         "Dealbreakers",
         DEALBREAKERS,
@@ -140,6 +142,7 @@ if st.button("Find my shows", type="primary"):
                 show_type=show_type.lower() if show_type != "Either" else None,
                 date=go_date.isoformat() if go_date else None,
                 time_of_day=time_of_day.lower() if go_date and time_of_day != "Any time" else None,
+                exclude=seen,
             )
         except RuntimeError as e:  # missing API key
             st.error(str(e))
@@ -154,7 +157,7 @@ if st.button("Find my shows", type="primary"):
     st.session_state.shown_once = True
     track(
         st.session_state.visitor, "picks_shown",
-        who=who, mood=mood, show_type=show_type, date_set=bool(go_date),
+        who=who, mood=mood, show_type=show_type, date_set=bool(go_date), seen_count=len(seen),
         days_ahead=(go_date - dt.date.today()).days if go_date else None, max_price=max_price if max_price is not None else "any",
         dealbreakers=list(dealbreakers), first_show=first_show,
         has_kids_ages=bool(kids_ages.strip()), text_length=len(text.strip()),

@@ -119,6 +119,16 @@ def run_offline():
         print("  ", m)
     failures += bool(dmiss) or not ok_limit
 
+    # Shows already seen are never sent to Claude or picked.
+    seen_titles = ["Wicked", "Hamilton"]
+    prompts = []
+    out = recommend_shows("anything", exclude=seen_titles,
+                          client=fake_client(lambda prompt: (prompts.append(prompt), sloppy_ai(prompt))[1]))
+    ok_seen = (all(p["title"] not in seen_titles for p in out["picks"])
+               and not any(f'"{t}"' in prompts[0] for t in seen_titles))
+    print(("PASS " if ok_seen else "FAIL ") + "seen shows are excluded")
+    failures += not ok_seen
+
     print("\nAll offline checks passed." if not failures else f"\n{failures} case(s) failed.")
     return failures
 

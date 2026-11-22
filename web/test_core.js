@@ -230,6 +230,15 @@ const sloppyAi = async () =>
     assert.ok(!/holiday week/.test(R.recommendLocal(SHOWS, { ...base, date: "2026-12-05" }).assumptions));
     assert.ok(SHOWS.every((s) => ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].every((k) => Array.isArray(s.schedule[k]))));
   });
+  check("seen or skipped shows (input.exclude) are never picked, and the rest keep their order", () => {
+    const all = R.recommendLocal(SHOWS, base).picks.map((p) => p.title);
+    const without = R.recommendLocal(SHOWS, { ...base, exclude: [all[1]] }).picks.map((p) => p.title);
+    assert.ok(!without.includes(all[1]));
+    assert.deepStrictEqual(without.slice(0, 2), [all[0], all[2]]);
+    const many = SHOWS.slice(0, 30).map((s) => s.title);
+    const r = R.recommendLocal(SHOWS, { ...base, exclude: many });
+    assert.ok(r.picks.every((p) => !many.includes(p.title)));
+  });
   check("catalog sanity: 33 shows, unique titles, price_low <= price_high", () => {
     assert.strictEqual(SHOWS.length, 33);
     assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 33);
