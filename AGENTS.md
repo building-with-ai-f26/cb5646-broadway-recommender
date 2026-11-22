@@ -29,7 +29,7 @@
 - **To deploy a change:** run `python web/build.py` (if `web/` or `data/shows.json` changed), run both test commands, then merge the PR to `main`. Pages republishes in 1-2 minutes. No other deploy step.
 - **Never commit secrets.** The web app needs no API key. The PostHog project token (`phc_`) is public by design; the personal API key (`phx_`) and `ANTHROPIC_API_KEY` must never be in the repo.
 - **Streamlit app:** local only (`streamlit run streamlit_app.py` with `.env`). It is not publicly deployed, because a public Claude app would spend my API key. If that changes, use Streamlit Community Cloud with the key in its Secrets settings and a spend limit set in the Anthropic Console.
-- **Spending caps and rate limits:** the Claude Console account must keep a hard monthly spend limit (Settings → Limits). The Streamlit app allows 10 Claude requests per visitor per 10 minutes and 60 per hour for everyone (`RateLimiter` in `app.py`, settings in `.env.example`); blocked requests show a "try again" message and never call Claude. The web app calls no paid API and writes to no database, so it needs no limit.
+- **Spending caps and rate limits:** the Claude Console account has a hard $10/month spend limit (set Nov 21; Settings → Limits). Keep it on. The Streamlit app allows 10 Claude requests per visitor per 10 minutes and 60 per hour for everyone (`RateLimiter` in `app.py`, settings in `.env.example`); blocked requests show a "try again" message and never call Claude. The web app calls no paid API and writes to no database, so it needs no limit.
 - **Weekly catalog update:** a scheduled task runs Mondays 6:58 AM ET, updates `data/shows.json`, rebuilds, tests and merges only if the tests pass.
 
 ## 5. Ask Me First (protect production)
