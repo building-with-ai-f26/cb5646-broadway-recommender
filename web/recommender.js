@@ -400,8 +400,14 @@
    * opts.offset skips down the ranking for "show me different picks" (wraps around the eligible list).
    * Each pick carries `rank`, its place in the full ranking.
    */
+  /** Open shows minus any the person has seen or skipped (input.exclude: titles). */
+  function available(allShows, input) {
+    const skip = new Set((input && input.exclude) || []);
+    return openShows(allShows).filter((s) => !skip.has(s.title));
+  }
+
   function recommendLocal(allShows, input, opts) {
-    const shows = openShows(allShows);
+    const shows = available(allShows, input);
     const { limits, ctx, eligible, ranked, want } = prepare(shows, input);
     const wanted = (opts && opts.offset) || 0;
     const start = eligible.length > want && wanted > 0 ? wanted % eligible.length : 0;
@@ -461,7 +467,7 @@
    * `ask(system, user)` must return the reply text. Any failure falls back to the built-in picks.
    */
   async function recommendWithAI(allShows, input, ask) {
-    const shows = openShows(allShows);
+    const shows = available(allShows, input);
     const prepared = prepare(shows, input);
     const local = recommendLocal(shows, input);
     if (!prepared.want) return local;
@@ -623,7 +629,7 @@
   }
 
   return {
-    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, openShows,
+    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, openShows, available,
     timesOn, fmtDay, fmtTime, addDays, weekdayOf, isHolidayWeek, todayIso, DAY_NAMES, minAge, parseAges, violations, closeness, priceText,
     analyzeText, scoreShow, recommendLocal, recommendWithAI, buildAiPrompt, prepare, parseJson, runtimeText, previewsNote,
   };

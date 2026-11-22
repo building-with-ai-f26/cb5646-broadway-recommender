@@ -145,6 +145,31 @@ button.line:hover { background: var(--accent-soft); }
 .official:hover { background: var(--accent); color: var(--accent-ink); }
 .official:focus-visible { outline: 3px solid var(--gold, #e0a01a); outline-offset: 2px; }
 .official small { font-weight: 500; opacity: .85; }
+.show { position: relative; }
+.show h3 { padding-right: 40px; }
+.swap { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; }
+.swap svg { width: 20px; height: 20px; }
+.swap:hover { background: var(--tint); color: var(--ink); }
+.swap:focus-visible, .seenbtn:focus-visible, .seenchip button:focus-visible, .toast button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.seenbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px; background: none; border: 0; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: .18em; }
+.seenbtn:hover { color: var(--ink); }
+.show.fresh { animation: freshIn .5s ease-out; }
+@keyframes freshIn { from { opacity: 0; transform: translateY(6px); box-shadow: 0 0 0 3px var(--bulb); } to { opacity: 1; transform: none; } }
+.seenadd { display: flex; gap: 8px; }
+.seenadd input { flex: 1; min-width: 0; min-height: 44px; padding: 6px 12px; font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; }
+.seenadd input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.seenadd button { min-height: 44px; padding: 0 16px; font: inherit; font-weight: 700; color: var(--accent); background: var(--surface); border: 2px solid var(--accent); border-radius: 999px; cursor: pointer; }
+.seenlist { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.seenlist:empty { display: none; }
+.seenchip { display: inline-flex; align-items: center; gap: 2px; padding-left: 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--tint); font-size: .92rem; }
+.seenchip button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; background: none; color: var(--muted); border-radius: 999px; cursor: pointer; font-size: 1.1rem; }
+.seenchip button:hover { color: var(--ink); background: var(--line); }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100vw - 32px); padding: 6px 8px 6px 16px; background: var(--ink); color: var(--surface); border-radius: 12px; box-shadow: 0 8px 28px rgba(10, 20, 40, .28); font-size: .95rem; }
+.toast[hidden] { display: none; }
+.toast button { min-height: 44px; padding: 0 10px; background: none; border: 0; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+@media (max-width: 600px) { .toast { bottom: 76px; } }
+@media (prefers-reduced-motion: reduce) { .show.fresh { animation: none; } }
 @media (min-width: 601px) { .official { justify-self: start; } }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -197,7 +222,8 @@ button.line:hover { background: var(--accent-soft); }
   .info { display: contents; }
   .cover { grid-column: 1; grid-row: 1 / span 2; }
   .info > h3, .info > .tags { grid-column: 2; }
-  .info > .facts, .info > .fine, .info > .official, .info > .why, .info > .heads { grid-column: 1 / -1; }
+  .info > .facts, .info > .fine, .info > .official, .info > .card-actions, .info > .why, .info > .heads { grid-column: 1 / -1; }
+  .card-actions .official { flex: 1 1 100%; }
   .facts { grid-template-columns: 1fr 1fr; gap: 12px 14px; }
     .info h3 { font-size: 1.35rem; }
 }
@@ -298,6 +324,18 @@ button.line:hover { background: var(--accent-soft); }
         <div class="pills" id="rules"></div>
         <p class="hint">"Under 2h15" drops shows longer than 2 hours 15 minutes. "No adult themes" drops shows with death, violence, abuse or war in them. "No intermission" keeps only shows that run straight through.</p>
       </fieldset>
+
+      <fieldset>
+        <legend>Shows you've already seen <span class="req opt">Optional</span></legend>
+        <div class="seenadd">
+          <label class="sr-only" for="seenIn">Add a show you've seen</label>
+          <input id="seenIn" list="seenOptions" placeholder="Type a show name" autocomplete="off" />
+          <button type="button" id="seenAdd">Add</button>
+        </div>
+        <datalist id="seenOptions"></datalist>
+        <div class="seenlist" id="seenList" aria-label="Shows you've seen"></div>
+        <p class="hint" id="seenHint">We won't suggest these. Saved on this device only. You can also tap "I've seen it" on any pick.</p>
+      </fieldset>
     </form>
 
     <section class="results" id="results" aria-labelledby="resultsTitle">
@@ -311,6 +349,7 @@ button.line:hover { background: var(--accent-soft); }
         <ul class="todo" id="todo"></ul>
       </div>
       <p class="sr-only" id="status" role="status"></p>
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button type="button" id="toastUndo">Undo</button></div>
       <div id="notices"></div>
       <div id="picks"></div>
       <div class="actions" id="actions" hidden>
@@ -735,8 +774,14 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
    * opts.offset skips down the ranking for "show me different picks" (wraps around the eligible list).
    * Each pick carries `rank`, its place in the full ranking.
    */
+  /** Open shows minus any the person has seen or skipped (input.exclude: titles). */
+  function available(allShows, input) {
+    const skip = new Set((input && input.exclude) || []);
+    return openShows(allShows).filter((s) => !skip.has(s.title));
+  }
+
   function recommendLocal(allShows, input, opts) {
-    const shows = openShows(allShows);
+    const shows = available(allShows, input);
     const { limits, ctx, eligible, ranked, want } = prepare(shows, input);
     const wanted = (opts && opts.offset) || 0;
     const start = eligible.length > want && wanted > 0 ? wanted % eligible.length : 0;
@@ -796,7 +841,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
    * `ask(system, user)` must return the reply text. Any failure falls back to the built-in picks.
    */
   async function recommendWithAI(allShows, input, ask) {
-    const shows = openShows(allShows);
+    const shows = available(allShows, input);
     const prepared = prepare(shows, input);
     const local = recommendLocal(shows, input);
     if (!prepared.want) return local;
@@ -958,7 +1003,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   }
 
   return {
-    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, openShows,
+    DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, openShows, available,
     timesOn, fmtDay, fmtTime, addDays, weekdayOf, isHolidayWeek, todayIso, DAY_NAMES, minAge, parseAges, violations, closeness, priceText,
     analyzeText, scoreShow, recommendLocal, recommendWithAI, buildAiPrompt, prepare, parseJson, runtimeText, previewsNote,
   };
@@ -1156,6 +1201,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
       mood: state.mood === "surprise" ? null : state.mood, showType: state.type === "either" ? null : state.type, maxPrice: state.budget === undefined ? null : state.budget, dealbreakers: state.rules,
       firstShow: { yes: true, both: true, no: false }[state.first] ?? null, // anyone new -> favor first-timer-friendly shows
       date: state.date || null, timeOfDay: state.date ? state.tod || null : null,
+      exclude: [...seen, ...skipped],
     };
   }
 
@@ -1394,9 +1440,15 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
 
   function card(p, idx) {
     const show = BY_TITLE[p.title] || {};
-    const art = el("article", "show");
+    const art = el("article", "show" + (p.title === freshTitle ? " fresh" : ""));
     art.setAttribute("aria-label", p.title);
-    art.append(coverNode(show, p.rank || idx + 1, idx));
+    const x = el("button", "swap"); x.type = "button";
+    x.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    x.setAttribute("aria-label", `Not for me: replace ${p.title} with another show`);
+    x.title = "Not for me: show another";
+    x.addEventListener("click", () => swapOut(p.title, idx));
+    art.append(x);
+    art.append(coverNode(show, idx + 1, idx)); // number = position on screen, so it stays 1-2-3 after a swap
     const info = el("div", "info");
     info.append(el("h3", "", p.title));
 
@@ -1422,14 +1474,22 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     const heads = el("div", "heads"); heads.innerHTML = fiSvg("alert");
     const hb = el("div"); hb.append(el("h4", "", "Heads up"), el("p", "", p.caution)); heads.append(hb); info.append(heads);
     // The call to action comes last: the person has read why it fits and the heads-up, and is ready to act.
+    const actions = el("div", "card-actions");
     if (p.official_url) {
       const a = el("a", "official");
       a.href = p.official_url; a.target = "_blank"; a.rel = "noopener";
       a.append(document.createTextNode("Get tickets on the official site"), el("span", "", " ↗"));
       a.setAttribute("aria-label", `${a.textContent.replace(" ↗", "")}: ${p.title} (opens in a new tab)`);
       a.addEventListener("click", () => track("official_link_clicked", { title: p.title, rank: p.rank, with_date: !!p.date }));
-      info.append(a);
+      actions.append(a);
     }
+    const seenBtn = el("button", "seenbtn"); seenBtn.type = "button";
+    seenBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+    seenBtn.append(document.createTextNode("I've seen it"));
+    seenBtn.setAttribute("aria-label", `I've seen ${p.title}: don't suggest it again`);
+    seenBtn.addEventListener("click", () => markSeen(p.title, "card", idx));
+    actions.append(seenBtn);
+    info.append(actions);
     art.append(info);
     return art;
   }
@@ -1455,9 +1515,10 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     result.picks.forEach((p, i) => $("picks").append(card(p, i)));
     fitCovers();
     const out = ruledOut(input);
-    const fit = SHOWS.length - out.total;
+    const fit = result.eligibleCount;
+    const hidden = SHOWS.length - out.total - fit; // fit your limits, but seen or skipped
     $("empty").hidden = true; $("scope").hidden = false;
-    $("scope").replaceChildren(el("b", "", String(fit)), document.createTextNode(` of ${SHOWS.length} shows fit your limits. Ranked by your mood, group and taste.`));
+    $("scope").replaceChildren(el("b", "", String(fit)), document.createTextNode(` of ${SHOWS.length} shows fit your limits` + (hidden > 0 ? ` (${hidden} ${hidden === 1 ? "show you've seen or skipped is" : "shows you've seen or skipped are"} hidden)` : "") + `. Ranked by your mood, group and taste.`));
     const ruled = $("ruled");
     if (out.total) {
       ruled.hidden = false; ruled.replaceChildren(el("span", "lamp stop"), document.createTextNode(out.parts.length === 1 ? `Ruled out ${out.total}: ${out.parts[0].replace(/^\d+ /, "")}` : `Ruled out ${out.total}: ${out.parts.join(", ")}`));
@@ -1493,12 +1554,93 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
     $("status").textContent = "Choose who is going, a mood and a price to see your picks.";
   }
 
-  function update(keepOffset) {
+  // ---------------------------------------------------------------- seen and skipped shows
+  // seen: shows the person has been to; kept on this device. skipped: picks they X'd this visit.
+  const SEEN_KEY = "broadwayConcierge.seen.v1";
+  let seen = [], skipped = [], freshTitle = null, undoAction = null, toastTimer = null;
+  try { seen = (JSON.parse(localStorage.getItem(SEEN_KEY) || "[]") || []).filter((t) => BY_TITLE[t]); } catch (e) { seen = []; }
+  function saveSeen() { try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) { /* private mode: keep for this visit */ } }
+  function renderSeenList() {
+    const list = $("seenList"); list.replaceChildren();
+    for (const t of seen) {
+      const chip = el("span", "seenchip", t);
+      const b = el("button", "", "×"); b.type = "button"; b.setAttribute("aria-label", `Remove ${t} from shows you've seen`);
+      b.addEventListener("click", () => { seen = seen.filter((x) => x !== t); saveSeen(); renderSeenList(); track("seen_removed", { title: t }); update(true); });
+      chip.append(b); list.append(chip);
+    }
+    const opts = $("seenOptions"); opts.replaceChildren();
+    SHOWS.filter((s) => !seen.includes(s.title)).map((s) => s.title).sort().forEach((t) => { const o = document.createElement("option"); o.value = t; opts.append(o); });
+  }
+  function addSeenFromInput() {
+    const v = $("seenIn").value.trim().toLowerCase(); if (!v) return;
+    const match = SHOWS.find((s) => s.title.toLowerCase() === v) || SHOWS.filter((s) => s.title.toLowerCase().includes(v)).sort((a, b) => a.title.length - b.title.length)[0];
+    if (!match) { $("seenHint").textContent = `No show called "${$("seenIn").value.trim()}" is running now. Pick one from the list.`; return; }
+    $("seenHint").textContent = "We won't suggest these. Saved on this device only. You can also tap \"I've seen it\" on any pick.";
+    $("seenIn").value = "";
+    if (!seen.includes(match.title)) { seen.push(match.title); saveSeen(); renderSeenList(); track("show_marked_seen", { title: match.title, from: "form" }); update(true, true); }
+  }
+  $("seenAdd").addEventListener("click", addSeenFromInput);
+  $("seenIn").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addSeenFromInput(); } });
+  $("seenIn").addEventListener("change", (e) => e.stopPropagation());
+
+  function showToast(text, undo) {
+    $("toastText").textContent = text; undoAction = undo || null;
+    $("toastUndo").hidden = !undo; $("toast").hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { $("toast").hidden = true; undoAction = null; }, 7000);
+  }
+  $("toastUndo").addEventListener("click", () => { const u = undoAction; $("toast").hidden = true; undoAction = null; if (u) { track("undo_clicked"); u(); } });
+
+  /** Replace one pick, keeping the other two where they are. */
+  function replaceOne(title, idx, kind) {
+    const before = lastResult ? lastResult.picks.map((p) => p.title) : [];
+    update(true, true);
+    const now = lastResult ? lastResult.picks.map((p) => p.title) : [];
+    const added = now.find((t) => !before.includes(t)) || null;
+    focusSlot(Math.min(idx, now.length - 1));
+    return added;
+  }
+  function swapOut(title, idx) {
+    touch(); skipped.push(title);
+    const added = replaceOne(title, idx, "swap");
+    track("pick_swapped", { title, rank: idx + 1, replaced_by: added });
+    const undo = () => { skipped = skipped.filter((t) => t !== title); update(true, true); };
+    showToast(added ? `Swapped ${title} for ${added}.` : `Removed ${title}. No other shows fit your limits.`, undo);
+  }
+  function markSeen(title, from, idx) {
+    touch();
+    if (!seen.includes(title)) { seen.push(title); saveSeen(); renderSeenList(); }
+    const added = replaceOne(title, idx, "seen");
+    track("show_marked_seen", { title, from, replaced_by: added });
+    const undo = () => { seen = seen.filter((t) => t !== title); saveSeen(); renderSeenList(); update(true, true); };
+    showToast(added ? `Marked ${title} as seen. Here's ${added} instead.` : `Marked ${title} as seen.`, undo);
+  }
+  function focusSlot(i) {
+    const h = document.querySelectorAll("#picks .show h3")[i];
+    if (h) { h.tabIndex = -1; h.focus({ preventScroll: false }); }
+  }
+  /** Keep picks that are still in the new list in the same position; new shows fill the gaps. */
+  function keepSlots(prev, picks) {
+    const byTitle = new Map(picks.map((p) => [p.title, p]));
+    const out = prev.map((t) => { const p = byTitle.get(t); if (p) byTitle.delete(t); return p || null; });
+    const rest = [...byTitle.values()];
+    for (let i = 0; i < out.length; i++) if (!out[i]) out[i] = rest.shift() || null;
+    return out.filter(Boolean).concat(rest).slice(0, Math.max(prev.length, picks.length));
+  }
+
+  function update(keepOffset, stable) {
     if (!keepOffset) offset = 0;
     refreshProgress();
     if (!complete()) { renderEmpty(); return; }
     const input = toInput();
-    render(R.recommendLocal(SHOWS, input, { offset }), input);
+    const result = R.recommendLocal(SHOWS, input, { offset });
+    freshTitle = null;
+    if (stable && lastResult && lastResult.picks.length) {
+      const prev = lastResult.picks.map((p) => p.title);
+      result.picks = keepSlots(prev, result.picks);
+      const added = result.picks.find((p) => !prev.includes(p.title));
+      freshTitle = added ? added.title : null;
+    }
+    render(result, input);
   }
 
   // ---------------------------------------------------------------- events
@@ -1528,7 +1670,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   $("text").addEventListener("input", () => { touch(); state.text = $("text").value; clearTimeout(typing); typing = setTimeout(() => { applyInference(); syncControls(); update(); }, 450); });
   $("ageUp").addEventListener("click", () => { state.auto.delete("age"); state.age = state.age === null ? 6 : Math.min(17, state.age + 1); $("ageOut").textContent = ageText(); update(); });
   $("ageDown").addEventListener("click", () => { state.auto.delete("age"); state.age = state.age === null || state.age <= 1 ? null : state.age - 1; $("ageOut").textContent = ageText(); update(); });
-  $("reset").addEventListener("click", () => { track("start_over_clicked"); state = fresh(); syncControls(); update(); });
+  $("reset").addEventListener("click", () => { track("start_over_clicked"); state = fresh(); skipped = []; syncControls(); update(); });
   function daysAhead(iso) { return Math.round((Date.parse(iso) - Date.parse(TODAY)) / 86400000); }
   $("dateIn").addEventListener("change", (e) => {
     e.stopPropagation(); touch();
@@ -1570,6 +1712,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   const b = el("a", "", "About this project"); b.href = "https://building-with-ai-f26.github.io/cb5646-broadway-recommender/"; b.target = "_blank"; b.rel = "noopener";
   foot.append(a, document.createTextNode(" sells official tickets. "), b, document.createTextNode("."));
 
+  renderSeenList();
   syncControls();
   update();
 })();
