@@ -8,7 +8,8 @@
 - **Tech stack:** Python 3 + Streamlit + Anthropic API (local app); plain JavaScript single-page web app in `web/` built into `docs/app/index.html`; hand-built catalog in `data/shows.json`.
 
 ## 2. Commands
-- **Install dependencies:** `pip install -r requirements.txt`
+- **Install dependencies:** `pip install -U -r requirements.txt`
+- **Audit dependencies:** `pip install pip-audit` then `pip-audit -r requirements.txt` (no npm packages: the web app has no `package.json`). Fix high-severity findings by raising the minimum version in `requirements.txt`, then rerun the tests.
 - **Run locally:** `streamlit run streamlit_app.py` (needs `ANTHROPIC_API_KEY` in `.env`); web app: open `docs/app/index.html`
 - **Run deterministic tests:** `python test_recommender.py`, `node web/test_core.js` and `python tests/test_rate_limit_streamlit.py` (clicks Find 30 times with a fake Claude; costs nothing)
 - **Rebuild the web app after editing `data/shows.json` or `web/`:** `python web/build.py`
