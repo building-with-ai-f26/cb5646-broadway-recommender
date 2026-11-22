@@ -1,6 +1,6 @@
 # Security Review — Broadway Concierge
 
-Reviewed Nov 21, 2026, with Claude as my coding agent. The fixes are in pull requests #21 to #24.
+Reviewed Nov 21, 2026, with Claude as my coding agent. The fixes are in pull requests #21 to #24 and the GitHub repo settings (#10 and #11 below).
 
 ## What kind of app this is
 
@@ -26,19 +26,19 @@ The only paid API is Claude, and only the local Streamlit app calls it.
 | 7 | **Backups** | There's no database. | Code, catalog and live site are versioned in git on GitHub. The PostHog events aren't. | Recorded the event count before testing. AGENTS.md explains how to export PostHog events as CSV before any risky analytics change. |
 | 8 | **Dependency audit** | `pip-audit` on `requirements.txt`, at both the newest versions and the oldest versions it allowed. `npm audit` doesn't apply: there's no `package.json`. | Newest versions were clean, but `streamlit>=1.30` still allowed **77 known vulnerabilities**: Streamlit 1.30 (6), Pillow 10.4 (69), protobuf 4.25 (2). | **#24:** minimum versions raised to the tested ones (Streamlit 1.67.0, anthropic 2.12.0, posthog 8.1.0, python-dotenv 1.2.4), plus security minimums for Pillow 13.0.0 and protobuf 6.33.5. Re-audited at the oldest and newest allowed versions: no known vulnerabilities. Installs now use `pip install -U -r requirements.txt`; my laptop is updated. |
 | 9 | **Untrusted text shown on the page** | Checked how the web app and Streamlit display text. | The web app uses `innerHTML` only for its own fixed icons; show and user text is added as plain text. Streamlit never uses `unsafe_allow_html`. Claude's picks are checked against the catalog, so theaters, prices and links always come from my data, not from the AI. | None needed. |
+| 10 | **Production branch protection** | Checked `main`'s settings through the GitHub API. | `main` wasn't protected: anyone with write access, or an agent ignoring AGENTS.md, could push straight to the live site. | Added a branch protection rule on `main`: a pull request is required (0 approvals, since I work alone), no one can bypass it (admins included), and force pushes and branch deletion are blocked. **Tested:** a direct push of an empty commit to `main` was rejected with "Changes must be made through a pull request." |
+| 11 | **GitHub key scanning and Dependabot** | Checked the repo's Advanced Security settings. | Secret scanning, push protection, the dependency graph and Dependabot security updates were off on this public repo. | Turned on Secret Protection (secret scanning), push protection (GitHub blocks pushes that contain a known key format), the dependency graph and Dependabot security updates (Dependabot opens a PR when a package needs a fix). Dependabot alerts were already on. Confirmed through the GitHub API. |
 
 ## Remaining issues
 
 1. **Anyone can send fake analytics events.** The public PostHog key is in the page, so someone could add junk events and skew my numbers. They can't read or delete anything. If it happens, filter those events out in PostHog.
-2. **`main` isn't protected on GitHub.** Branch protection is off, so anyone with write access, or an agent ignoring AGENTS.md, could push straight to production. Recommended: turn on branch protection (pull request required). This is a repo setting, so it's on my "Ask me first" list.
-3. **GitHub secret scanning, push protection and Dependabot alerts are off** on this public repo. Recommended: turn them on (Settings → Code security) so a leaked key is blocked or flagged automatically and new vulnerabilities trigger alerts.
-4. **The Monday catalog task merges to `main` without asking.** This is the one intended exception. It can only change the show catalog and rebuilt app, and only when tests pass, but it does publish to production unattended.
-5. **The rate limit is only good enough for local use.** Its counters live in memory: they reset when the app restarts and aren't shared across servers. If the app were hosted, `X-Forwarded-For` can be faked unless the host's proxy sets it. The 60-per-hour cap for everyone and the $10 Console cap remain the backstop.
-6. **Third-party scripts run on the live site.** PostHog's script and Google Fonts load from their own servers, without a pinned version or integrity check, and the site has no Content Security Policy (GitHub Pages can't send security headers). If one of those services were compromised, its code would run on my page.
-7. **Dependencies have minimum versions, not exact ones.** New vulnerabilities will keep appearing. Re-run `pip-audit -r requirements.txt` regularly (it's in AGENTS.md), or turn on Dependabot (issue 3).
-8. **The "seen shows" list is stored in the browser.** Anyone using the same browser on a shared computer can see it. It contains only show titles.
-9. **Typed descriptions go to Anthropic.** In the Streamlit app, what a visitor types is sent to Claude to rank shows. It is never sent to PostHog.
-10. **The Streamlit app isn't deployed.** If that changes: put the key in Streamlit Community Cloud's Secrets settings (never in the repo), keep the $10 cap, and re-run the 30-click test against the hosted URL.
+2. **The Monday catalog task merges to `main` without asking.** This is the one intended exception. It still has to go through a pull request (branch protection), can only change the show catalog and rebuilt app, and only merges when tests pass, but it does publish to production unattended. There's no automated test run on GitHub (CI) to require before merging; tests run before each merge instead.
+3. **The rate limit is only good enough for local use.** Its counters live in memory: they reset when the app restarts and aren't shared across servers. If the app were hosted, `X-Forwarded-For` can be faked unless the host's proxy sets it. The 60-per-hour cap for everyone and the $10 Console cap remain the backstop.
+4. **Third-party scripts run on the live site.** PostHog's script and Google Fonts load from their own servers, without a pinned version or integrity check, and the site has no Content Security Policy (GitHub Pages can't send security headers). If one of those services were compromised, its code would run on my page.
+5. **Dependencies have minimum versions, not exact ones.** New vulnerabilities will keep appearing. Dependabot now watches for these and opens fix PRs; `pip-audit -r requirements.txt` (in AGENTS.md) is the manual check. Dependabot PRs still need my review and merge.
+6. **The "seen shows" list is stored in the browser.** Anyone using the same browser on a shared computer can see it. It contains only show titles.
+7. **Typed descriptions go to Anthropic.** In the Streamlit app, what a visitor types is sent to Claude to rank shows. It is never sent to PostHog.
+8. **The Streamlit app isn't deployed.** If that changes: put the key in Streamlit Community Cloud's Secrets settings (never in the repo), keep the $10 cap, and re-run the 30-click test against the hosted URL.
 
 ## How to re-run these checks
 

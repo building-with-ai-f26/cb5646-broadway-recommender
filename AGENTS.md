@@ -34,7 +34,7 @@
 - **Weekly catalog update:** a scheduled task runs Mondays 6:58 AM ET, updates `data/shows.json`, rebuilds, tests and merges only if the tests pass.
 
 ## 5. Ask Me First (protect production)
-`main` is production: merging to it publishes the live site. Before running any of these, stop, say exactly what will happen, and wait for a clear "yes" from me in chat. A "yes" covers that one action only.
+`main` is production: merging to it publishes the live site. GitHub branch protection requires a pull request for every change to `main` (no direct or force pushes, no bypass). Before running any of these, stop, say exactly what will happen, and wait for a clear "yes" from me in chat. A "yes" covers that one action only.
 - **Merging to `main`** (`gh pr merge`, the GitHub merge API, or `git push` to `main`). The only standing exception is the Monday catalog task above, and only for `data/shows.json` and the rebuilt `docs/app/index.html` with all tests passing.
 - **Rewriting or deleting history:** `git push --force` / `-f`, `git reset --hard`, `git rebase` on a pushed branch, `git clean`, `git branch -D`, deleting a remote branch.
 - **Deleting files or folders** (`rm -rf`, removing anything under `docs/` or `data/`).
