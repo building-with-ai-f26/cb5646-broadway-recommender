@@ -10,7 +10,7 @@
 ## 2. Commands
 - **Install dependencies:** `pip install -r requirements.txt`
 - **Run locally:** `streamlit run streamlit_app.py` (needs `ANTHROPIC_API_KEY` in `.env`); web app: open `docs/app/index.html`
-- **Run deterministic tests:** `python test_recommender.py` and `node web/test_core.js`
+- **Run deterministic tests:** `python test_recommender.py`, `node web/test_core.js` and `python tests/test_rate_limit_streamlit.py` (clicks Find 30 times with a fake Claude; costs nothing)
 - **Rebuild the web app after editing `data/shows.json` or `web/`:** `python web/build.py`
 - **Run model evals:** `[e.g., python tests/eval.py]`
 
@@ -29,6 +29,7 @@
 - **To deploy a change:** run `python web/build.py` (if `web/` or `data/shows.json` changed), run both test commands, then merge the PR to `main`. Pages republishes in 1-2 minutes. No other deploy step.
 - **Never commit secrets.** The web app needs no API key. The PostHog project token (`phc_`) is public by design; the personal API key (`phx_`) and `ANTHROPIC_API_KEY` must never be in the repo.
 - **Streamlit app:** local only (`streamlit run streamlit_app.py` with `.env`). It is not publicly deployed, because a public Claude app would spend my API key. If that changes, use Streamlit Community Cloud with the key in its Secrets settings and a spend limit set in the Anthropic Console.
+- **Spending caps and rate limits:** the Claude Console account must keep a hard monthly spend limit (Settings → Limits). The Streamlit app allows 10 Claude requests per visitor per 10 minutes and 60 per hour for everyone (`RateLimiter` in `app.py`, settings in `.env.example`); blocked requests show a "try again" message and never call Claude. The web app calls no paid API and writes to no database, so it needs no limit.
 - **Weekly catalog update:** a scheduled task runs Mondays 6:58 AM ET, updates `data/shows.json`, rebuilds, tests and merges only if the tests pass.
 
 ## 5. Ask Me First (protect production)

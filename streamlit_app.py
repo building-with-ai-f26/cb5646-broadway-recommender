@@ -5,9 +5,27 @@ import datetime as dt
 import time
 
 from analytics import new_visitor_id, track
-from app import DEALBREAKERS, LONG_RUNTIME_MIN, fmt_day, fmt_time, infer_answers, load_shows, recommend_shows
+from app import DEALBREAKERS, LONG_RUNTIME_MIN, RateLimiter, fmt_day, fmt_time, infer_answers, load_shows, recommend_shows
 
 st.set_page_config(page_title="Broadway Concierge", page_icon="🎭")
+
+
+@st.cache_resource
+def rate_limiter():
+    """One limiter shared by every visitor session on this server."""
+    return RateLimiter()
+
+
+def visitor_key():
+    """Who to rate-limit: the visitor's IP when hosted, otherwise this browser session."""
+    try:
+        forwarded = (st.context.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+        ip = forwarded or getattr(st.context, "ip_address", None)
+    except Exception:
+        ip = None
+    if isinstance(ip, str) and ip.strip():
+        return f"ip:{ip.strip()}"
+    return f"session:{st.session_state.visitor}"
 
 if "visitor" not in st.session_state:
     st.session_state.visitor = new_visitor_id()
@@ -128,6 +146,15 @@ if st.button("Find my shows", type="primary"):
     if not text.strip():
         st.warning("Write a sentence or two about your night first.")
         track(st.session_state.visitor, "find_clicked_empty")
+        st.stop()
+    allowed, wait, reason = rate_limiter().check(visitor_key())
+    if not allowed:
+        minutes = max(1, round(wait / 60))
+        if reason == "global":
+            st.warning(f"Broadway Concierge is busy right now. Please try again in about {minutes} min.")
+        else:
+            st.warning(f"You've asked for a lot of picks in a short time. Please try again in about {minutes} min.")
+        track(st.session_state.visitor, "rate_limited", reason=reason, wait_seconds=wait)
         st.stop()
     with st.spinner("Picking your shows..."):
         try:

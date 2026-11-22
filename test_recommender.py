@@ -129,6 +129,25 @@ def run_offline():
     print(("PASS " if ok_seen else "FAIL ") + "seen shows are excluded")
     failures += not ok_seen
 
+    # Rate limit: 30 requests in a row from one visitor -> first 10 allowed, then blocked.
+    from app import RateLimiter
+    now = [0.0]
+    rl = RateLimiter(per_visitor=10, window_sec=600, global_per_hour=60, clock=lambda: now[0])
+    results = []
+    for _ in range(30):
+        results.append(rl.check("visitor-a"))
+        now[0] += 1
+    allowed = sum(r[0] for r in results)
+    blocked_ok = all(r == (False, r[1], "visitor") and r[1] > 0 for r in results[10:])
+    other_ok = rl.check("visitor-b")[0]            # someone else is not blocked
+    now[0] = 601
+    reset_ok = rl.check("visitor-a")[0]            # window passed -> allowed again
+    g = RateLimiter(per_visitor=10, window_sec=600, global_per_hour=5, clock=lambda: 0.0)
+    global_ok = [g.check(f"v{i}")[0] for i in range(7)] == [True] * 5 + [False] * 2 and g.check("new")[2] == "global"
+    ok_rl = allowed == 10 and blocked_ok and other_ok and reset_ok and global_ok
+    print(("PASS " if ok_rl else "FAIL ") + f"rate limit: {allowed}/30 allowed, others ok={other_ok}, resets={reset_ok}, global cap={global_ok}")
+    failures += not ok_rl
+
     print("\nAll offline checks passed." if not failures else f"\n{failures} case(s) failed.")
     return failures
 
