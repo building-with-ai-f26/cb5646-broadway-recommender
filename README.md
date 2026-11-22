@@ -51,7 +51,7 @@ git clone https://github.com/building-with-ai-f26/cb5646-broadway-recommender.gi
 cd cb5646-broadway-recommender
 py -m venv .venv
 .venv\Scripts\Activate.ps1      # if blocked: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-pip install -r requirements.txt
+pip install -U -r requirements.txt   # -U also upgrades older installed packages
 copy .env.example .env          # then put your ANTHROPIC_API_KEY (and PostHog token) in .env
 streamlit run streamlit_app.py  # opens http://localhost:8501
 ```

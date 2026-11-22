@@ -1,4 +1,9 @@
-anthropic
-python-dotenv
-streamlit>=1.30
-posthog
+# Minimum versions are the ones tested with this app and free of known vulnerabilities
+# (checked with pip-audit on Nov 21, 2026). Update with: pip install -U -r requirements.txt
+anthropic>=2.12.0
+python-dotenv>=1.2.4
+streamlit>=1.67.0
+posthog>=8.1.0
+# Security floors for packages Streamlit installs; older versions have known vulnerabilities.
+pillow>=13.0.0
+protobuf>=6.33.5
