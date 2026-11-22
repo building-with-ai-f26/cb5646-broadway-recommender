@@ -260,17 +260,17 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
       <ul>
         <li><strong>The show catalog</strong> (<code>data/shows.json</code>) is a file in the repo, versioned in git, so every past version can be restored.</li>
         <li><strong>The "shows I've seen" list</strong> stays in each visitor's own browser (<code>localStorage</code>). It never reaches me, and clearing the browser clears it.</li>
-        <li><strong>Usage analytics</strong> go to PostHog (US cloud): anonymous events and, on the web pages, session replays kept for 30 days. Form fields are masked in replays, and typed text is never sent as an event. The page uses PostHog's public key, which can only add events: I tested it from the browser console, and reading, querying and deleting with it were all rejected.</li>
+        <li><strong>Usage analytics</strong> go to PostHog (US cloud): anonymous events and, on the web pages, session replays kept for 30 days. Form fields are masked in replays, typed text is never sent as an event, and PostHog drops visitors' IP addresses ("anonymize IPs" turned on Nov 21). The page uses PostHog's public key, which can only add events: I tested it from the browser console, and reading, querying and deleting with it were all rejected.</li>
       </ul>
       <p>If the product ever needs saved accounts or shared data, that means adding a server and a database behind sign-in, with writes going through the server's secret key, not the browser.</p>
-      <p><strong>Security choices</strong> (full review in <a href="https://github.com/building-with-ai-f26/cb5646-broadway-recommender/blob/main/SECURITY.md">SECURITY.md</a>, 12 checks):</p>
+      <p><strong>Security choices</strong> (full review in <a href="https://github.com/building-with-ai-f26/cb5646-broadway-recommender/blob/main/SECURITY.md">SECURITY.md</a>, 13 checks):</p>
       <ul>
         <li><strong>Keys:</strong> the Claude key lives only in <code>.env</code> on my laptop. A search of the live site, the repo and all of its history found no secret keys. GitHub secret scanning and push protection now block any key that gets committed.</li>
         <li><strong>Spending:</strong> a hard $10/month cap on my Claude Console account, plus a rate limit in the Streamlit app (10 requests per visitor per 10 minutes, 60 per hour for everyone). In the test, 30 clicks in a row let 10 through and blocked 20.</li>
         <li><strong>The live pages:</strong> a Content Security Policy lets each page run only its own scripts (by exact fingerprint), PostHog's scripts and Google Fonts, and send data only to PostHog. In testing it blocked an injected script, a script from another site, a hidden <code>onerror</code> handler and a request to an outside server, while PostHog analytics and session replay kept working.</li>
         <li><strong>Dependencies:</strong> <code>pip-audit</code> found that older allowed versions had 77 known vulnerabilities. The minimum versions were raised until none remained, and Dependabot now opens fix PRs.</li>
         <li><strong>My coding agent:</strong> AGENTS.md has an "Ask Me First" list (deleting data, keys and permissions, anything that costs money, merging to production), enforced in Claude Code's settings, plus rules learned from real mistakes.</li>
-        <li><strong>Accepted risks:</strong> anyone can send fake analytics events with the public key, the policy has to trust PostHog's whole script server, and PostHog keeps visitors' IP addresses (used for country stats).</li>
+        <li><strong>Accepted risks:</strong> anyone can send fake analytics events with the public key, and the policy has to trust PostHog's whole script server.</li>
       </ul>
     </section>
 
