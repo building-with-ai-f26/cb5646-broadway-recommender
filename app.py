@@ -30,6 +30,46 @@ SHOW_TYPES = ("musical", "play")  # anything else (or None) means "either"
 # Content notes that count as adult themes: death, violence, abuse, war, addiction and similar.
 ADULT_THEMES = re.compile(r"dark themes|adult themes|death|murder|suicide|violence|blood|war themes|military|abuse|holocaust|disturbing|grief|bullying|drinking|affair")
 
+# Rate limits on Claude calls (the only paid route). Change them in .env if needed.
+RATE_PER_VISITOR = int(os.getenv("RATE_PER_VISITOR", "10"))        # requests per visitor...
+RATE_WINDOW_SEC = int(os.getenv("RATE_WINDOW_SEC", "600"))          # ...in this many seconds (10 min)
+RATE_GLOBAL_PER_HOUR = int(os.getenv("RATE_GLOBAL_PER_HOUR", "60"))  # all visitors together, per hour
+
+
+class RateLimiter:
+    """Sliding-window limits: per visitor, plus one cap for everyone so new visitors can't
+    get around it. check() records the request only when it is allowed."""
+
+    def __init__(self, per_visitor=RATE_PER_VISITOR, window_sec=RATE_WINDOW_SEC,
+                 global_per_hour=RATE_GLOBAL_PER_HOUR, clock=None):
+        import threading, time
+        self.per_visitor, self.window, self.global_per_hour = per_visitor, window_sec, global_per_hour
+        self.clock = clock or time.monotonic
+        self.lock = threading.Lock()
+        self.hits = {}        # visitor -> list of timestamps
+        self.all_hits = []    # timestamps for everyone
+
+    def check(self, visitor):
+        """Return (allowed, seconds_to_wait, reason). reason is "visitor" or "global" when blocked."""
+        with self.lock:
+            now = self.clock()
+            mine = [t for t in self.hits.get(visitor, []) if now - t < self.window]
+            self.all_hits = [t for t in self.all_hits if now - t < 3600]
+            if len(mine) >= self.per_visitor:
+                self.hits[visitor] = mine
+                return False, int(self.window - (now - mine[0])) + 1, "visitor"
+            if len(self.all_hits) >= self.global_per_hour:
+                self.hits[visitor] = mine
+                return False, int(3600 - (now - self.all_hits[0])) + 1, "global"
+            mine.append(now)
+            self.all_hits.append(now)
+            self.hits[visitor] = mine
+            # forget visitors with nothing recent so memory stays small
+            if len(self.hits) > 1000:
+                self.hits = {k: v for k, v in self.hits.items() if v and now - v[-1] < self.window}
+            return True, 0, None
+
+
 _client = None
 
 

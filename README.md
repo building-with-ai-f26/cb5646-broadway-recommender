@@ -68,4 +68,9 @@ The web app and product page send anonymous usage events to PostHog (US cloud). 
 To build the app with analytics, put `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` in `.env` (names are in `.env.example`) and run `python web/build.py`. With no token the app builds and runs normally and sends nothing. The project token is public by design; never use a personal API key (`phx_...`).
 
 ### Streamlit app analytics
-`streamlit_app.py` also sends PostHog events from the server (`app_opened`, `answers_prefilled`, `picks_shown`, `find_clicked_empty`, `recommend_failed`) through `analytics.py`, using the same `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` from `.env`. Each browser session gets a random anonymous id. Typed text is never sent, only `text_length`. With no token set it does nothing.
+`streamlit_app.py` also sends PostHog events from the server (`app_opened`, `answers_prefilled`, `picks_shown`, `find_clicked_empty`, `recommend_failed`, `rate_limited`) through `analytics.py`, using the same `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` from `.env`. Each browser session gets a random anonymous id. Typed text is never sent, only `text_length`. With no token set it does nothing.
+
+## Spending caps and rate limits
+- **Claude spend cap:** set a hard monthly limit in the Claude Console (Settings → Limits) so a bug or abuse can never cost more than that.
+- **Rate limit:** the Streamlit app allows each visitor 10 Claude requests per 10 minutes, and 60 per hour across all visitors. After that it shows "Please try again in about N min" and does not call Claude. Change the numbers with `RATE_PER_VISITOR`, `RATE_WINDOW_SEC` and `RATE_GLOBAL_PER_HOUR` in `.env`.
+- **Test it free:** `python tests/test_rate_limit_streamlit.py` clicks "Find my shows" 30 times with a fake Claude: requests 1–10 go through, 11–30 are blocked.
