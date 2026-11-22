@@ -36,7 +36,7 @@ Follow these steps for every change:
 5. **Check the screen for UI changes:** look at the page at phone width (375 px) and at desktop width, and use every control you changed (see rule 6.3).
 6. **Commit and open a PR:** commit as Ciara Butler <ciaralb@umich.edu>, push the branch, and open a pull request that says what changed, why, how it was checked, and what's still open.
 7. **Ask before merging:** show me the PR and wait for me to say "merge" (section 5). Then squash-merge the PR.
-8. **Verify the live site:** after 1-2 minutes, load the live URL. Confirm the change is there, the console shows no Content Security Policy errors, and PostHog events still arrive.
+8. **Verify the live site:** after 1-2 minutes, load the live URL. Confirm the change is there, the console shows no Content Security Policy errors, PostHog events still arrive, and a new session replay appears in PostHog with data in it.
 9. **Record it:** if the change is user-visible or costs money, add it to the current build log in the PRD (`docs/index.html`) in a separate PR.
 10. **Rolling back:** undo a bad change with `git revert` in a new PR. Never force-push or reset `main`.
 

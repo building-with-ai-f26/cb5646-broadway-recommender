@@ -8,7 +8,7 @@ Reviewed Nov 21, 2026, with Claude as my coding agent. The fixes are in pull req
 
 | Part | Where it runs | AI? | Saves data? |
 |---|---|---|---|
-| Web app + product page | Public, on GitHub Pages (`docs/`) | No. Picks are worked out in the visitor's browser. | No database. It keeps two kinds of data: (1) the "shows I've seen" list, stored only in that visitor's own browser (`localStorage`), and (2) anonymous usage events sent to PostHog with the public project key. Typed text is never sent. |
+| Web app + product page | Public, on GitHub Pages (`docs/`) | No. Picks are worked out in the visitor's browser. | No database. It keeps two kinds of data: (1) the "shows I've seen" list, stored only in that visitor's own browser (`localStorage`), and (2) anonymous usage events and session replays sent to PostHog with the public project key. Replays keep 30 days and mask every form field, so typed text is never sent. |
 | Streamlit app | My own laptop only (not deployed) | Yes. It calls the Claude API with my key from `.env`. | No database. It sends anonymous usage events to PostHog (typed text is never sent, only its length). |
 
 The only paid API is Claude, and only the local Streamlit app calls it.
@@ -38,8 +38,9 @@ The only paid API is Claude, and only the local Streamlit app calls it.
 4. **PostHog's script host is trusted as a whole.** The policy allows any script from `us-assets.i.posthog.com`, because PostHog loads extra scripts there and doesn't publish fixed fingerprints for them. If PostHog itself were compromised, its code would still run. Styles also allow inline CSS (the app's drawings use it), and a `<meta>` policy can't stop other sites from embedding the page in a frame (clickjacking). GitHub Pages can't send the headers that would fix that last part.
 5. **Dependencies have minimum versions, not exact ones.** New vulnerabilities will keep appearing. Dependabot now watches for these and opens fix PRs; `pip-audit -r requirements.txt` (in AGENTS.md) is the manual check. Dependabot PRs still need my review and merge.
 6. **The "seen shows" list is stored in the browser.** Anyone using the same browser on a shared computer can see it. It contains only show titles.
-7. **Typed descriptions go to Anthropic.** In the Streamlit app, what a visitor types is sent to Claude to rank shows. It is never sent to PostHog.
-8. **The Streamlit app isn't deployed.** If that changes: put the key in Streamlit Community Cloud's Secrets settings (never in the repo), keep the $10 cap, and re-run the 30-click test against the hosted URL.
+7. **PostHog keeps visitors' IP addresses** (its "anonymize IPs" setting is off) and records the screen in session replays. Form fields are masked and nothing identifies a person by name, but turning on IP anonymizing would reduce this further (a PostHog project setting, so it's on my Ask Me First list).
+8. **Typed descriptions go to Anthropic.** In the Streamlit app, what a visitor types is sent to Claude to rank shows. It is never sent to PostHog.
+9. **The Streamlit app isn't deployed.** If that changes: put the key in Streamlit Community Cloud's Secrets settings (never in the repo), keep the $10 cap, and re-run the 30-click test against the hosted URL.
 
 ## How to re-run these checks
 
