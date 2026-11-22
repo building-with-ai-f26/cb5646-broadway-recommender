@@ -232,6 +232,10 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
           <div class="stat-value">About $0.02 per request (Claude Sonnet 5.5 at $2 per million input and $10 per million output tokens; roughly 8,000 tokens in and 400 out with the 33-show catalog)</div>
         </div>
         <div class="stat-box">
+          <div class="stat-label">Spend Controls</div>
+          <div class="stat-value">Hard $10/month spend cap on my Claude Console account (set Nov 21), so the API can never cost more than $10 in a month. The Streamlit app also allows 10 Claude requests per visitor per 10 minutes and 60 per hour for everyone. The web app calls no paid API.</div>
+        </div>
+        <div class="stat-box">
           <div class="stat-label">User Evidence (Analytics, Nov 13 to 20)</div>
           <div class="stat-value">PostHog confirmed working on this page, the web app and (since Nov 20) the Streamlit app. Nov 13 to 20: 50 pageviews, 67 answers, 58 sets of picks (2 from Streamlit), 19 forms filled from a description, 6 "different picks" clicks, 1 copy, across 14 anonymous visitor IDs. As far as I know these are my own tests on different browsers and devices; no outside users are confirmed yet, so this is not user evidence. Next: share the link with Anne and a few theatergoers and watch whether they reach three picks and click through to an official site.</div>
         </div>
@@ -296,7 +300,7 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
       <div class="log-entry">
         <h3>Build 3 · Build.exe: The Core Workflow (Due Nov 23)</h3>
         <ul>
-          <li><strong>What shipped (Nov 20 to 21, pull requests #13 to #18):</strong>
+          <li><strong>What shipped (Nov 20 to 21, pull requests #13 to #22):</strong>
             <ul>
               <li><strong>Live run with my own key:</strong> the local Streamlit app now returns picks from Claude (screenshot added to the Build 1 entry), and its PostHog events arrive.</li>
               <li><strong>Official site on every pick:</strong> each show links to its own official website, checked against its TDF listing or its own site (two supplied by me). The link is a full button at the end of the card, "Get tickets on the official site", placed after "Why it fits" and "Heads up", where the person has decided and is ready to act.</li>
@@ -304,7 +308,8 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
               <li><strong>Catalog kept current automatically:</strong> a scheduled task runs every Monday to remove closed shows, add new ones and previews, refresh weekly times and closing dates and update the counts, and publishes only when the tests pass. I get a phone notification with what changed.</li>
               <li><strong>Swap one pick:</strong> an × in the top-right of each card replaces only that pick with the next-best show. The other two stay in place, the new one is highlighted, and "Undo" brings the old one back. Swapped shows stay hidden until "Start over".</li>
               <li><strong>Shows you've already seen:</strong> an "I've seen it" button on each pick, plus a checklist of every running show (with a filter box) to tick several at once. Seen shows are never suggested, are remembered on that device, and show as removable tags. The Streamlit app has the same list.</li>
-              <li><strong>Tests:</strong> 40 offline checks for the web logic and 10 for the Python app, all passing, including shared date and description cases so both apps behave the same.</li>
+              <li><strong>Security and spend checks (Nov 21, #20 to #22):</strong> no secret keys in the repo, its history or the live site (only the public PostHog key, which can add events but cannot read or delete them; tested from the browser console). The app stores no files and has no database. A $10/month spend cap is set on my Claude Console account, and the Streamlit app now rate-limits Claude calls: clicking "Find my shows" 30 times in a row lets 10 through and blocks the other 20 with a "try again" message. AGENTS.md now has an "Ask me first" list (merges to main, force pushes, deletes, settings, analytics data, keys), also enforced in Claude Code's settings.</li>
+              <li><strong>Tests:</strong> 40 offline checks for the web logic and 11 for the Python app, plus a 30-click rate-limit test of the Streamlit app with a fake Claude, all passing, including shared date and description cases so both apps behave the same.</li>
             </ul>
           </li>
           <li><strong>What broke / changed in PRD:</strong>
