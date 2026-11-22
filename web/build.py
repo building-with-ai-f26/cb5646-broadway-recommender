@@ -6,7 +6,11 @@ docs/app/index.html. The output has no external code, so it works as a published
 """
 import json
 import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from csp import add_csp  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 def read_env(name):
@@ -45,7 +49,13 @@ page = (template.replace("/*__CATALOG__*/null", catalog)
         .replace("/*__POSTHOG__*/null", posthog)
         .replace("/*__CORE__*/", core.replace("</script", "<\\/script")))
 
+page = add_csp(page)
 out = ROOT / "docs" / "app" / "index.html"
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(page)
 print(f"wrote {out.relative_to(ROOT)} ({len(page) / 1024:.0f} KB, {len(shows)} shows)")
+
+# The product page is hand-written, but its security policy is refreshed here so an edited script keeps working.
+prd = ROOT / "docs" / "index.html"
+prd.write_text(add_csp(prd.read_text()))
+print(f"refreshed the security policy in {prd.relative_to(ROOT)}")
