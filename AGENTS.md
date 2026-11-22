@@ -30,3 +30,17 @@
 - **Never commit secrets.** The web app needs no API key. The PostHog project token (`phc_`) is public by design; the personal API key (`phx_`) and `ANTHROPIC_API_KEY` must never be in the repo.
 - **Streamlit app:** local only (`streamlit run streamlit_app.py` with `.env`). It is not publicly deployed, because a public Claude app would spend my API key. If that changes, use Streamlit Community Cloud with the key in its Secrets settings and a spend limit set in the Anthropic Console.
 - **Weekly catalog update:** a scheduled task runs Mondays 6:58 AM ET, updates `data/shows.json`, rebuilds, tests and merges only if the tests pass.
+
+## 5. Ask Me First (protect production)
+`main` is production: merging to it publishes the live site. Before running any of these, stop, say exactly what will happen, and wait for a clear "yes" from me in chat. A "yes" covers that one action only.
+- **Merging to `main`** (`gh pr merge`, the GitHub merge API, or `git push` to `main`). The only standing exception is the Monday catalog task above, and only for `data/shows.json` and the rebuilt `docs/app/index.html` with all tests passing.
+- **Rewriting or deleting history:** `git push --force` / `-f`, `git reset --hard`, `git rebase` on a pushed branch, `git clean`, `git branch -D`, deleting a remote branch.
+- **Deleting files or folders** (`rm -rf`, removing anything under `docs/` or `data/`).
+- **Repo or hosting settings:** deleting or renaming the repo, changing GitHub Pages settings, branch protection, or collaborators.
+- **Analytics data:** deleting or editing anything in PostHog (events, persons, insights, dashboards), or changing project settings.
+- **Scheduled tasks:** creating, changing, pausing or deleting them.
+- **Secrets:** reading, printing, copying or changing `.env` or any API key.
+
+These rules are also enforced for Claude Code in `.claude/settings.json` (`permissions.ask`).
+
+**Backups:** there is no database. Every version of the code, catalog and live site is kept in git history on GitHub, so any change can be reverted. PostHog keeps the analytics events; export them as CSV from PostHog's SQL editor before any risky analytics change.
