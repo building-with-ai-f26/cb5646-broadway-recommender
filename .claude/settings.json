@@ -20,7 +20,10 @@
       "Bash(gh api -X DELETE:*)",
       "Bash(gh api --method DELETE:*)",
       "Read(./.env)",
-      "Edit(./.env)"
+      "Edit(./.env)",
+      "Bash(python test_recommender.py --live:*)",
+      "Bash(python app.py:*)",
+      "Edit(./.claude/settings.json)"
     ]
   }
 }
