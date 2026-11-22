@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!--__CSP__-->
 <title>Broadway Concierge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -258,7 +259,7 @@ button.line:hover { background: var(--accent-soft); }
   </header>
 
   <main class="app">
-    <form class="brief" id="brief" autocomplete="off" onsubmit="return false">
+    <form class="brief" id="brief" autocomplete="off">
       <div class="head-row">
         <h2>Your night</h2>
         <button type="button" class="linkbtn" id="reset">Start over</button>
@@ -1042,6 +1043,7 @@ const POSTHOG = /*__POSTHOG__*/null;
 
   // ---------------------------------------------------------------- events
   let typing = null;
+  $("brief").addEventListener("submit", (e) => e.preventDefault()); // never reload the page
   $("brief").addEventListener("change", (e) => {
     const t = e.target; if (!t || !t.name) return;
     touch();

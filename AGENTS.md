@@ -12,7 +12,7 @@
 - **Audit dependencies:** `pip install pip-audit` then `pip-audit -r requirements.txt` (no npm packages: the web app has no `package.json`). Fix high-severity findings by raising the minimum version in `requirements.txt`, then rerun the tests.
 - **Run locally:** `streamlit run streamlit_app.py` (needs `ANTHROPIC_API_KEY` in `.env`); web app: open `docs/app/index.html`
 - **Run deterministic tests:** `python test_recommender.py`, `node web/test_core.js` and `python tests/test_rate_limit_streamlit.py` (clicks Find 30 times with a fake Claude; costs nothing)
-- **Rebuild the web app after editing `data/shows.json` or `web/`:** `python web/build.py`
+- **Rebuild the web app after editing `data/shows.json` or `web/`:** `python web/build.py`. It also refreshes the Content Security Policy in both pages (`web/csp.py`). Rerun it after editing any `<script>` in `docs/index.html` too, or the edited script is blocked. Never use inline `onclick=`/`onsubmit=` handlers; add listeners in a script instead.
 - **Run model evals:** `[e.g., python tests/eval.py]`
 
 ## 3. Non-Negotiable Engineering Rules
@@ -35,7 +35,7 @@
 
 ## 5. Ask Me First (protect production)
 `main` is production: merging to it publishes the live site. GitHub branch protection requires a pull request for every change to `main` (no direct or force pushes, no bypass). Before running any of these, stop, say exactly what will happen, and wait for a clear "yes" from me in chat. A "yes" covers that one action only.
-- **Merging to `main`** (`gh pr merge`, the GitHub merge API, or `git push` to `main`). The only standing exception is the Monday catalog task above, and only for `data/shows.json` and the rebuilt `docs/app/index.html` with all tests passing.
+- **Merging to `main`** (`gh pr merge`, the GitHub merge API, or `git push` to `main`). The only standing exception is the Monday catalog task above, and only for `data/shows.json`, the rebuilt `docs/app/index.html` and the refreshed security policy line in `docs/index.html`, with all tests passing.
 - **Rewriting or deleting history:** `git push --force` / `-f`, `git reset --hard`, `git rebase` on a pushed branch, `git clean`, `git branch -D`, deleting a remote branch.
 - **Deleting files or folders** (`rm -rf`, removing anything under `docs/` or `data/`).
 - **Repo or hosting settings:** deleting or renaming the repo, changing GitHub Pages settings, branch protection, or collaborators.

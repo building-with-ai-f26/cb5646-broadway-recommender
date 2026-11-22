@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YCHqJpQHlqDGqIijz/Mq5DcGO5JVXaKtHwncSdJrOTg=' 'sha256-NiSiY7UipkXPvvzl8jzdQVGhZgdkb+CWVBlzogS3BTo=' 'sha256-k0lq1vSfL5XrSxznFwxl9RIaOBSwSx+1Bz6uPSl/NVU=' https://us-assets.i.posthog.com; connect-src 'self' https://us.i.posthog.com https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Broadway Concierge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -258,7 +259,7 @@ button.line:hover { background: var(--accent-soft); }
   </header>
 
   <main class="app">
-    <form class="brief" id="brief" autocomplete="off" onsubmit="return false">
+    <form class="brief" id="brief" autocomplete="off">
       <div class="head-row">
         <h2>Your night</h2>
         <button type="button" class="linkbtn" id="reset">Start over</button>
@@ -1678,6 +1679,7 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
 
   // ---------------------------------------------------------------- events
   let typing = null;
+  $("brief").addEventListener("submit", (e) => e.preventDefault()); // never reload the page
   $("brief").addEventListener("change", (e) => {
     const t = e.target; if (!t || !t.name) return;
     touch();

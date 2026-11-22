@@ -245,6 +245,21 @@ const sloppyAi = async () =>
     assert.ok(SHOWS.every((s) => s.price_low <= s.price_high && s.runtime_min > 0));
   });
 
+  check("security policy: both pages allow exactly their own inline scripts and have no inline handlers", () => {
+    const crypto = require("crypto"), fs = require("fs"), path = require("path");
+    for (const rel of ["../docs/app/index.html", "../docs/index.html"]) {
+      const html = fs.readFileSync(path.join(__dirname, rel), "utf8");
+      const meta = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)">/);
+      assert.ok(meta, rel + " has no security policy; run python web/build.py");
+      const scriptSrc = meta[1].split(";").map((d) => d.trim()).find((d) => d.startsWith("script-src"));
+      assert.ok(!/unsafe-inline|unsafe-eval|\*/.test(scriptSrc), rel + " script-src is too loose");
+      const want = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => "'sha256-" + crypto.createHash("sha256").update(m[1]).digest("base64") + "'");
+      const have = scriptSrc.match(/'sha256-[^']+'/g) || [];
+      assert.deepStrictEqual(have.sort(), want.sort(), rel + " script hashes are out of date; run python web/build.py");
+      assert.ok(!/\son[a-z]+="/i.test(html.replace(/<script>[\s\S]*?<\/script>/g, "")), rel + " has an inline on*= handler, which the policy blocks");
+    }
+  });
+
   console.log(failures ? `\n${failures} check(s) failed.` : "\nAll web checks passed.");
   process.exit(failures ? 1 : 0);
 })();

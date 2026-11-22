@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xbP5KZlSUyMCBOTzvXDbjdy6ouEEbX8Rw9FmE++PrOk=' https://us-assets.i.posthog.com; connect-src 'self' https://us.i.posthog.com https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Broadway Concierge · Building with AI (Fall 2026)</title>
 
   <!-- PostHog analytics (US cloud). The project token is public by design: it can only send events.
        This page is hand-written HTML with no build step, so the token sits here; the web app reads it from .env. -->
   <script>
     (function (d, w, token, host) {
+      d.addEventListener("click", function (e) {
+        if (e.target.closest && e.target.closest("#tryProduct") && w.posthog && w.posthog.capture) w.posthog.capture("clicked_try_product");
+      });
       if (w.posthog && w.posthog.__loaded) return;
       var ph = w.posthog = w.posthog || [];
       if (ph.__SV) return;
@@ -164,7 +168,7 @@
       <h1>Broadway Concierge</h1>
       <p class="tagline">Broadway Concierge helps new and experienced theatergoers find the right show for their group, matched to their taste, budget and schedule, and flags ticket scams before they pay.</p>
       <div class="cta-row">
-        <a class="btn" href="#live-demo" onclick="window.posthog && posthog.capture('clicked_try_product')">See the Product →</a>
+        <a class="btn" href="#live-demo" id="tryProduct">See the Product →</a>
         <a class="btn btn-secondary" href="#prd">Read the Living PRD</a>
         <a class="btn btn-secondary" href="#build-log">Weekly Build Log</a>
       </div>
