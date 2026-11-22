@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xbP5KZlSUyMCBOTzvXDbjdy6ouEEbX8Rw9FmE++PrOk=' https://us-assets.i.posthog.com; connect-src 'self' https://us.i.posthog.com https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JkNIm/le4UUs6s+93n9Hk+QX3hD9Nd3Rzo1kWYNaHXg=' https://us-assets.i.posthog.com; connect-src 'self' https://us.i.posthog.com https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Broadway Concierge · Building with AI (Fall 2026)</title>
 
   <!-- PostHog analytics (US cloud). The project token is public by design: it can only send events.
@@ -26,7 +26,7 @@
       s.async = true; s.crossOrigin = "anonymous";
       s.src = host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js";
       d.head.appendChild(s);
-      ph.init(token, { api_host: host, defaults: "2026-08-30" });
+      ph.init(token, { api_host: host, defaults: "2026-08-30", session_recording: { maskAllInputs: true } });
     })(document, window, "phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc", "https://us.i.posthog.com");
   </script>
 
@@ -191,7 +191,7 @@
     <!-- LIVING PRD (Updated every week!) -->
     <section id="prd">
       <h2>Living PRD (Product Requirements Document)</h2>
-      <p class="meta">Updated every week as we test with real users and learn what works.</p>
+      <p class="meta">PRD v3 (updated Nov 21): adds section 5, hosting, data and security. Updated every week as we test with real users and learn what works.</p>
 
       <h3>1. Target User & The Job to Be Done</h3>
       <p><strong>Who is this for?</strong> Anne, a knowledgeable, engaged theatergoer who sees shows regularly but has limited money, time and planning bandwidth. Anne cares more about finding the right show than the most popular one: something with strong writing, a memorable score and an emotional payoff. Anne already puts in the effort, reading reviews, playing cast recordings and entering lotteries, but that research is scattered across many apps and sites. Anne often chooses for a partner, friend or family member too.</p>
@@ -223,7 +223,7 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
       <p><strong>Riskiest Assumption:</strong> Broadway Concierge takes a user’s request, loads a hand-built catalog of running shows, and sends both to the Claude API, which picks three fits with a reason, a caution, and a typical price. The same pattern powers the secondary resale checker, which compares a pasted listing against a red-flag checklist and theater seating info. There’s no database and no live data, so the riskiest assumption is that the catalog is accurate and current enough to trust. Closed shows, stale prices, or wrong content warnings would sink user confidence, so verify every show and test with a few sample requests.</p>
       <p><strong>What Week 2 showed:</strong> The risk was real. The Build 1 catalog, written from memory, covered only 8 of the 33 shows now on Broadway, and several current shows close within weeks. The catalog was rebuilt on Nov 13 against Broadway Direct's what's-on guide, with a date on every entry and closing notes where known. Ages, content notes and the high end of each price range are still my estimates and are labeled as estimates on every card. Keeping the catalog current is now a weekly task, not a one-time setup.</p>
-      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, musical or play, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages, show type or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>. There, the person can start from an example or describe the night in words, and the four required questions are filled in from that text; anything they pick themselves is never overwritten. The Streamlit app reads descriptions with the same rules. Both apps send anonymous usage events to PostHog: answers chosen, picks shown and buttons used, never the text a person types. Shows the person has seen or swapped out are removed before ranking, in both apps. Each catalog entry also holds the show's official site, its weekly performance times (a regular week, from BroadwayWorld's weekly grid) and its announced closing date. Every Monday at 6:58 AM a scheduled Claude task checks Broadway Direct, TDF, IBDB and BroadwayWorld, removes closed shows, adds new ones (including previews), refreshes times, closing dates and the show counts, runs the tests, and publishes the update only if they pass.</p>
+      <p><strong>Simple Architecture:</strong> Typed request + form answers (who, mood, musical or play, budget, dealbreakers) → Streamlit app in Python, which drops any show in <code>data/shows.json</code> that breaks the budget, kids' ages, show type or dealbreakers → Claude API ranks the shows that are left → three picks, checked against the catalog so theater, price and rush info always come from the catalog, not the AI. A browser version of the same rules lives at <a href="app/">app/</a>. There, the person can start from an example or describe the night in words, and the four required questions are filled in from that text; anything they pick themselves is never overwritten. The Streamlit app reads descriptions with the same rules. Both apps send anonymous usage events to PostHog: answers chosen, picks shown and buttons used, never the text a person types. The web pages also record session replays (see section 5), with every form field masked. Shows the person has seen or swapped out are removed before ranking, in both apps. Each catalog entry also holds the show's official site, its weekly performance times (a regular week, from BroadwayWorld's weekly grid) and its announced closing date. Every Monday at 6:58 AM a scheduled Claude task checks Broadway Direct, TDF, IBDB and BroadwayWorld, removes closed shows, adds new ones (including previews), refreshes times, closing dates and the show counts, runs the tests, and publishes the update only if they pass.</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
@@ -248,6 +248,30 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
           <div class="stat-value">TBD</div>
         </div>
       </div>
+
+      <h3>5. Hosting, Data &amp; Security (PRD v3)</h3>
+      <p><strong>Hosting choice: GitHub Pages for everything public; the Claude app stays on my laptop.</strong></p>
+      <ul>
+        <li><strong>Live site:</strong> the product page and the web app are plain HTML and JavaScript, so GitHub Pages serves them free from the <code>docs/</code> folder on <code>main</code>. There is no server to run, patch or pay for, and no key in the browser, because the web app ranks shows with rules in the visitor's browser instead of calling Claude.</li>
+        <li><strong>Claude app:</strong> the Streamlit app calls the Claude API with my key, so it is <em>not</em> deployed. A public copy would let anyone spend my credits. If I deploy it later, it goes on Streamlit Community Cloud with the key in its Secrets settings, behind the rate limit and spend cap below.</li>
+        <li><strong>How changes ship:</strong> every change is a pull request that I approve; merging to <code>main</code> publishes the site in 1-2 minutes. GitHub branch protection blocks direct and force pushes to <code>main</code> (tested: a direct push was rejected). Rolling back means reverting the pull request. The only automatic change is the Monday catalog update, which also goes through a pull request and merges only if the tests pass.</li>
+      </ul>
+      <p><strong>Database choice: none, on purpose.</strong> There are no accounts and no sign-in, so there is no personal data to store or protect. Everything the product keeps lives in one of three places:</p>
+      <ul>
+        <li><strong>The show catalog</strong> (<code>data/shows.json</code>) is a file in the repo, versioned in git, so every past version can be restored.</li>
+        <li><strong>The "shows I've seen" list</strong> stays in each visitor's own browser (<code>localStorage</code>). It never reaches me, and clearing the browser clears it.</li>
+        <li><strong>Usage analytics</strong> go to PostHog (US cloud): anonymous events and, on the web pages, session replays kept for 30 days. Form fields are masked in replays, typed text is never sent as an event, and PostHog drops visitors' IP addresses ("anonymize IPs" turned on Nov 21). The page uses PostHog's public key, which can only add events: I tested it from the browser console, and reading, querying and deleting with it were all rejected.</li>
+      </ul>
+      <p>If the product ever needs saved accounts or shared data, that means adding a server and a database behind sign-in, with writes going through the server's secret key, not the browser.</p>
+      <p><strong>Security choices</strong> (full review in <a href="https://github.com/building-with-ai-f26/cb5646-broadway-recommender/blob/main/SECURITY.md">SECURITY.md</a>, 13 checks):</p>
+      <ul>
+        <li><strong>Keys:</strong> the Claude key lives only in <code>.env</code> on my laptop. A search of the live site, the repo and all of its history found no secret keys. GitHub secret scanning and push protection now block any key that gets committed.</li>
+        <li><strong>Spending:</strong> a hard $10/month cap on my Claude Console account, plus a rate limit in the Streamlit app (10 requests per visitor per 10 minutes, 60 per hour for everyone). In the test, 30 clicks in a row let 10 through and blocked 20.</li>
+        <li><strong>The live pages:</strong> a Content Security Policy lets each page run only its own scripts (by exact fingerprint), PostHog's scripts and Google Fonts, and send data only to PostHog. In testing it blocked an injected script, a script from another site, a hidden <code>onerror</code> handler and a request to an outside server, while PostHog analytics and session replay kept working.</li>
+        <li><strong>Dependencies:</strong> <code>pip-audit</code> found that older allowed versions had 77 known vulnerabilities. The minimum versions were raised until none remained, and Dependabot now opens fix PRs.</li>
+        <li><strong>My coding agent:</strong> AGENTS.md has an "Ask Me First" list (deleting data, keys and permissions, anything that costs money, merging to production), enforced in Claude Code's settings, plus rules learned from real mistakes.</li>
+        <li><strong>Accepted risks:</strong> anyone can send fake analytics events with the public key, and the policy has to trust PostHog's whole script server.</li>
+      </ul>
     </section>
 
     <!-- WEEKLY BUILD LOG (Updated at least twice a week via Git commits) -->
@@ -304,7 +328,7 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
       <div class="log-entry">
         <h3>Build 3 · Build.exe: The Core Workflow (Due Nov 23)</h3>
         <ul>
-          <li><strong>What shipped (Nov 20 to 21, pull requests #13 to #22):</strong>
+          <li><strong>What shipped (Nov 20 to 21, pull requests #13 to #28):</strong>
             <ul>
               <li><strong>Live run with my own key:</strong> the local Streamlit app now returns picks from Claude (screenshot added to the Build 1 entry), and its PostHog events arrive.</li>
               <li><strong>Official site on every pick:</strong> each show links to its own official website, checked against its TDF listing or its own site (two supplied by me). The link is a full button at the end of the card, "Get tickets on the official site", placed after "Why it fits" and "Heads up", where the person has decided and is ready to act.</li>

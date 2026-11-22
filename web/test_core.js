@@ -260,6 +260,15 @@ const sloppyAi = async () =>
     }
   });
 
+  check("analytics privacy: both pages start PostHog with session replay masking every form field", () => {
+    const fs = require("fs"), path = require("path");
+    for (const rel of ["../docs/app/index.html", "../docs/index.html"]) {
+      const html = fs.readFileSync(path.join(__dirname, rel), "utf8");
+      const inits = html.match(/\.init\([^)]*\)/g) || [];
+      assert.ok(inits.length >= 1 && inits.every((i) => /session_recording:\s*\{\s*maskAllInputs:\s*true\s*\}/.test(i)), rel + " must start PostHog with maskAllInputs: true");
+    }
+  });
+
   console.log(failures ? `\n${failures} check(s) failed.` : "\nAll web checks passed.");
   process.exit(failures ? 1 : 0);
 })();

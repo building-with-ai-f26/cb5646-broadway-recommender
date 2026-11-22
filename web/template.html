@@ -412,7 +412,8 @@ const POSTHOG = /*__POSTHOG__*/null;
     s.async = true; s.crossOrigin = "anonymous";
     s.src = cfg.host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js";
     document.head.appendChild(s);
-    ph.init(cfg.token, { api_host: cfg.host, defaults: "2026-08-30" });
+    // Session replay records the screen, but every form field is masked, so typed text never leaves the browser.
+    ph.init(cfg.token, { api_host: cfg.host, defaults: "2026-08-30", session_recording: { maskAllInputs: true } });
   }
   loadAnalytics(POSTHOG);
   function track(name, props) { try { if (window.posthog && typeof window.posthog.capture === "function") window.posthog.capture(name, props || {}); } catch (e) { /* analytics must never break the app */ } }
