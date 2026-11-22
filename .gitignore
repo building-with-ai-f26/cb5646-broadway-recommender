@@ -8,7 +8,8 @@ secrets.*
 credentials.json
 
 # AI Agent Local State / Logs (keep curated logs in journal/)
-.claude/
+.claude/*
+!.claude/settings.json
 .codex/
 .cursor/
 .opencode/
