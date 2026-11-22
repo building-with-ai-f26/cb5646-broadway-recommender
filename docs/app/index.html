@@ -156,10 +156,22 @@ button.line:hover { background: var(--accent-soft); }
 .seenbtn:hover { color: var(--ink); }
 .show.fresh { animation: freshIn .5s ease-out; }
 @keyframes freshIn { from { opacity: 0; transform: translateY(6px); box-shadow: 0 0 0 3px var(--bulb); } to { opacity: 1; transform: none; } }
-.seenadd { display: flex; gap: 8px; }
-.seenadd input { flex: 1; min-width: 0; min-height: 44px; padding: 6px 12px; font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; }
-.seenadd input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.seenadd button { min-height: 44px; padding: 0 16px; font: inherit; font-weight: 700; color: var(--accent); background: var(--surface); border: 2px solid var(--accent); border-radius: 999px; cursor: pointer; }
+.seenpick summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 8px 16px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); font-weight: 600; cursor: pointer; list-style: none; }
+.seenpick summary::-webkit-details-marker { display: none; }
+.seenpick summary::after { content: ""; width: 9px; height: 9px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-3px); transition: transform .15s; }
+.seenpick[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
+.seenpick summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.seenpanel { margin-top: 8px; padding: 10px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); }
+.seenpanel input[type=search] { width: 100%; min-height: 44px; padding: 6px 12px; font: inherit; color: var(--ink); background: var(--ground); border: 1.5px solid var(--line); border-radius: 10px; }
+.seenpanel input[type=search]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.seenchecks { max-height: 280px; overflow-y: auto; margin: 8px 0; overscroll-behavior: contain; }
+.seenchecks label { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 4px 8px; border-radius: 8px; cursor: pointer; }
+.seenchecks label:hover { background: var(--tint); }
+.seenchecks input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.seenchecks .none { padding: 10px 8px; color: var(--muted); }
+.seenfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.seenfoot #seenDone { min-height: 44px; padding: 0 22px; font: inherit; font-weight: 700; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 999px; cursor: pointer; }
+.seenfoot #seenDone:focus-visible { outline: 3px solid var(--bulb); outline-offset: 2px; }
 .seenlist { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .seenlist:empty { display: none; }
 .seenchip { display: inline-flex; align-items: center; gap: 2px; padding-left: 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--tint); font-size: .92rem; }
@@ -327,14 +339,17 @@ button.line:hover { background: var(--accent-soft); }
 
       <fieldset>
         <legend>Shows you've already seen <span class="req opt">Optional</span></legend>
-        <div class="seenadd">
-          <label class="sr-only" for="seenIn">Add a show you've seen</label>
-          <input id="seenIn" list="seenOptions" placeholder="Type a show name" autocomplete="off" />
-          <button type="button" id="seenAdd">Add</button>
-        </div>
-        <datalist id="seenOptions"></datalist>
+        <details class="seenpick" id="seenPick">
+          <summary><span id="seenSummary">Choose shows you've seen</span></summary>
+          <div class="seenpanel">
+            <label class="sr-only" for="seenFilter">Filter shows</label>
+            <input type="search" id="seenFilter" placeholder="Filter shows" autocomplete="off" />
+            <div class="seenchecks" id="seenChecks" role="group" aria-label="Shows you've seen"></div>
+            <div class="seenfoot"><button type="button" class="linkbtn" id="seenClear">Clear all</button><button type="button" id="seenDone">Done</button></div>
+          </div>
+        </details>
         <div class="seenlist" id="seenList" aria-label="Shows you've seen"></div>
-        <p class="hint" id="seenHint">We won't suggest these. Saved on this device only. You can also tap "I've seen it" on any pick.</p>
+        <p class="hint" id="seenHint">Tick every show you've already been to. We won't suggest them. Saved on this device only. You can also tap "I've seen it" on any pick.</p>
       </fieldset>
     </form>
 
@@ -1560,28 +1575,46 @@ const POSTHOG = {"token":"phc_kUeY6SQddEZSftHjWuX2XWQpKrHHY2fuACr8YcDN36wc","hos
   let seen = [], skipped = [], freshTitle = null, undoAction = null, toastTimer = null;
   try { seen = (JSON.parse(localStorage.getItem(SEEN_KEY) || "[]") || []).filter((t) => BY_TITLE[t]); } catch (e) { seen = []; }
   function saveSeen() { try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) { /* private mode: keep for this visit */ } }
+  let seenTimer = null;
+  function setSeen(next, from) {
+    const added = next.filter((t) => !seen.includes(t)), removed = seen.filter((t) => !next.includes(t));
+    seen = next; saveSeen(); renderSeenList();
+    added.forEach((t) => track("show_marked_seen", { title: t, from }));
+    removed.forEach((t) => track("seen_removed", { title: t, from }));
+    clearTimeout(seenTimer); seenTimer = setTimeout(() => update(true, true), 120);
+  }
+  function renderSeenChecks() {
+    const q = $("seenFilter").value.trim().toLowerCase();
+    const box = $("seenChecks"); box.replaceChildren();
+    const titles = SHOWS.map((s) => s.title).sort((a, b) => a.replace(/^(the|a|an) /i, "").localeCompare(b.replace(/^(the|a|an) /i, "")));
+    const shown = titles.filter((t) => !q || t.toLowerCase().includes(q));
+    for (const t of shown) {
+      const lab = el("label"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.value = t; cb.checked = seen.includes(t);
+      cb.addEventListener("change", (e) => { e.stopPropagation(); touch(); setSeen(cb.checked ? [...seen, t] : seen.filter((x) => x !== t), "form"); });
+      lab.append(cb, document.createTextNode(t)); box.append(lab);
+    }
+    if (!shown.length) box.append(el("p", "none", "No running show matches that."));
+  }
   function renderSeenList() {
     const list = $("seenList"); list.replaceChildren();
     for (const t of seen) {
       const chip = el("span", "seenchip", t);
       const b = el("button", "", "×"); b.type = "button"; b.setAttribute("aria-label", `Remove ${t} from shows you've seen`);
-      b.addEventListener("click", () => { seen = seen.filter((x) => x !== t); saveSeen(); renderSeenList(); track("seen_removed", { title: t }); update(true); });
+      b.addEventListener("click", () => setSeen(seen.filter((x) => x !== t), "chip"));
       chip.append(b); list.append(chip);
     }
-    const opts = $("seenOptions"); opts.replaceChildren();
-    SHOWS.filter((s) => !seen.includes(s.title)).map((s) => s.title).sort().forEach((t) => { const o = document.createElement("option"); o.value = t; opts.append(o); });
+    $("seenSummary").textContent = seen.length ? `Shows you've seen (${seen.length} selected)` : "Choose shows you've seen";
+    if ($("seenPick").open) {
+      const box = $("seenChecks");
+      box.querySelectorAll("input").forEach((cb) => { cb.checked = seen.includes(cb.value); });
+    }
   }
-  function addSeenFromInput() {
-    const v = $("seenIn").value.trim().toLowerCase(); if (!v) return;
-    const match = SHOWS.find((s) => s.title.toLowerCase() === v) || SHOWS.filter((s) => s.title.toLowerCase().includes(v)).sort((a, b) => a.title.length - b.title.length)[0];
-    if (!match) { $("seenHint").textContent = `No show called "${$("seenIn").value.trim()}" is running now. Pick one from the list.`; return; }
-    $("seenHint").textContent = "We won't suggest these. Saved on this device only. You can also tap \"I've seen it\" on any pick.";
-    $("seenIn").value = "";
-    if (!seen.includes(match.title)) { seen.push(match.title); saveSeen(); renderSeenList(); track("show_marked_seen", { title: match.title, from: "form" }); update(true, true); }
-  }
-  $("seenAdd").addEventListener("click", addSeenFromInput);
-  $("seenIn").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addSeenFromInput(); } });
-  $("seenIn").addEventListener("change", (e) => e.stopPropagation());
+  $("seenPick").addEventListener("toggle", () => { if ($("seenPick").open) { renderSeenChecks(); $("seenFilter").focus(); } });
+  $("seenFilter").addEventListener("input", (e) => { e.stopPropagation(); renderSeenChecks(); });
+  $("seenFilter").addEventListener("change", (e) => e.stopPropagation());
+  $("seenFilter").addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });
+  $("seenClear").addEventListener("click", () => { if (seen.length) setSeen([], "clear"); });
+  $("seenDone").addEventListener("click", () => { $("seenPick").open = false; $("seenFilter").value = ""; $("seenPick").querySelector("summary").focus(); });
 
   function showToast(text, undo) {
     $("toastText").textContent = text; undoAction = undo || null;
