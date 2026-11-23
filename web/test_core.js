@@ -88,7 +88,7 @@ const sloppyAi = async () =>
     const fits = r.picks.filter((p) => p.fits_all_limits);
     assert.ok(fits.length >= 2 && fits.every((p) => R.minAge(BY_TITLE[p.title]) <= 6), r.picks.map((p) => p.title).join());
     assert.ok(r.picks.filter((p) => !p.fits_all_limits).every((p) => R.minAge(BY_TITLE[p.title]) > 6));
-    assert.ok(r.message);
+    if (fits.length < 3) assert.ok(r.message); // near-misses shown -> a message explains them
   });
   check("'hate jukebox' in text (no checkbox) keeps jukebox shows out of the top 3", () => {
     const r = R.recommendLocal(SHOWS, { ...base, text: "I hate jukebox musicals, want to sing along", mood: "sing along" });
@@ -221,8 +221,8 @@ const sloppyAi = async () =>
     const mon = R.recommendLocal(SHOWS, { ...base, date: "2026-11-23" });
     assert.ok(mon.eligibleCount === SHOWS.filter((s) => s.schedule.mon.length).length && mon.eligibleCount < 8);
     assert.ok(mon.picks.filter((p) => p.fits_all_limits).every((p) => p.performances.length));
-    const ii = BY_TITLE["The Imaginary Invalid"];
-    assert.deepStrictEqual(R.violations(ii, { date: "2026-12-02" }), ["it closes Sun, Nov 22"]);
+    const ii = BY_TITLE["Two Strangers (Carry a Cake Across New York)"];
+    assert.deepStrictEqual(R.violations(ii, { date: "2026-12-02" }), ["it closes Sun, Nov 29"]);
     assert.strictEqual(R.violations(BY_TITLE["Wicked"], { date: "2026-11-23" })[0], "it doesn't play on Mondays");
     const mat = R.recommendLocal(SHOWS, { ...base, date: "2026-12-05", timeOfDay: "matinee" });
     assert.ok(mat.picks.every((p) => p.performances.every((t) => t < "17:00")));
@@ -239,9 +239,9 @@ const sloppyAi = async () =>
     const r = R.recommendLocal(SHOWS, { ...base, exclude: many });
     assert.ok(r.picks.every((p) => !many.includes(p.title)));
   });
-  check("catalog sanity: 33 shows, unique titles, price_low <= price_high", () => {
-    assert.strictEqual(SHOWS.length, 33);
-    assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 33);
+  check("catalog sanity: 36 shows, unique titles, price_low <= price_high", () => {
+    assert.strictEqual(SHOWS.length, 36);
+    assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 36);
     assert.ok(SHOWS.every((s) => s.price_low <= s.price_high && s.runtime_min > 0));
   });
 
