@@ -112,7 +112,7 @@ def run_offline():
             dmiss.append((text, picked, want))
     shows_by = {s["title"]: s for s in load_shows()}
     ok_limit = (v_(shows_by["Wicked"], date="2026-11-23") == ["it doesn't play on Mondays"]
-                and v_(shows_by["The Imaginary Invalid"], date="2026-12-02") == ["it closes Sun, Nov 22"]
+                and v_(shows_by["Two Strangers (Carry a Cake Across New York)"], date="2026-12-02") == ["it closes Sun, Nov 29"]
                 and all(t < "17:00" for t in times_on(shows_by["Hamilton"], "2026-11-21", "matinee")))
     print(("PASS " if not dmiss and ok_limit else "FAIL ") + f"dates: {len(data['date_cases']) - len(dmiss)}/{len(data['date_cases'])} date phrases, limits ok={ok_limit}")
     for m in dmiss:
