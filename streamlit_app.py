@@ -190,9 +190,11 @@ if not clicked:
             with col, st.container(border=True):
                 st.caption(f"**{p['featured_label'].upper()}**")
                 st.markdown(f"**{p['title']}**")
+                deal = (active_deals(show, TODAY) or [None])[0]
+                deal_price = deal.get("from_price") if deal and deal.get("from_price") and deal["from_price"] < show.get("price_low", 0) else None
+                st.markdown(f":red[**From ${deal_price} with deal**]" if deal_price else f":red[**${show.get('price_low')} to ${show.get('price_high')}**]")
                 if show.get("about"):
                     st.caption(show["about"])
-                deal = (active_deals(show, TODAY) or [None])[0]
                 if deal:
                     st.markdown(f":green-background[🏷️ Deal · ends {fmt_day(deal['ends'])}]")
                 with st.expander("Details"):

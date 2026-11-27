@@ -244,6 +244,7 @@ button.line:hover { background: var(--accent-soft); }
 .teaser { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 10px; align-content: start; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--ground); color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .teaser:hover, .teaser[aria-expanded="true"] { border-color: var(--accent); }
 .teaser .cover { grid-row: 1 / span 3; width: 52px; border-radius: 4px; }
+.teaser .price { font-weight: 700; font-size: .92rem; color: var(--accent); font-variant-numeric: tabular-nums; }
 .teaser .badge { font-size: .74rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .03em; }
 .teaser strong { font: 700 1rem/1.2 var(--font-display); overflow-wrap: anywhere; }
 .teaser .blurb { margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; grid-column: 1 / -1; }
@@ -1011,6 +1012,8 @@ const POSTHOG = /*__POSTHOG__*/null;
     b.setAttribute("aria-expanded", String(openTeaser === p.title)); b.setAttribute("aria-controls", "teaserOpen");
     b.append(coverNode(show, i + 1, i), el("span", "badge", p.featured_label), el("strong", "", p.title));
     const deal = R.activeDeals(show, TODAY)[0];
+    const dealPrice = deal && deal.from_price && deal.from_price < show.price_low ? deal.from_price : null;
+    b.append(el("span", "price", dealPrice ? `From $${dealPrice} with deal` : `$${show.price_low} to $${show.price_high}`));
     if (show.about) b.append(el("p", "blurb", show.about));
     if (deal) b.append(el("span", "dealtag", "Deal · ends " + fmtDate(deal.ends)));
     b.append(el("span", "more", openTeaser === p.title ? "Hide details" : "Details"));
