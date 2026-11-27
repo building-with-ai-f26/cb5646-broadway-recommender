@@ -63,12 +63,12 @@ The web version needs no install: open `docs/app/index.html` or the live link ab
 If your app needs API keys, use a local environment file such as `.env`. Keep private keys out of source code, browser code, screenshots, and commits. The template ignores `.env`; `.env.example` contains placeholders only.
 
 ## Analytics (PostHog)
-The web app and product page send anonymous usage events to PostHog (US cloud). The app sends choices and counts only, never the text a person types. Events: `question_answered`, `quick_start_clicked`, `answers_prefilled`, `price_slider_used`, `picks_shown`, `different_picks_clicked`, `picks_copied`, `start_over_clicked`, `official_link_clicked`, `pick_swapped`, `show_marked_seen`, `seen_removed`, `undo_clicked`, plus automatic pageviews. `picks_shown` and `question_answered` carry the date choice as `date_set`, `days_ahead`, `weekday` and `time_of_day`.
+The web app and product page send anonymous usage events to PostHog (US cloud). The app sends choices and counts only, never the text a person types. Events: `question_answered`, `quick_start_clicked`, `answers_prefilled`, `price_slider_used`, `picks_shown`, `different_picks_clicked`, `picks_copied`, `start_over_clicked`, `official_link_clicked`, `pick_swapped`, `show_marked_seen`, `seen_removed`, `undo_clicked`, `featured_shown`, `featured_opened`, `next_question_clicked`, `deal_clicked`, plus automatic pageviews. `picks_shown` and `question_answered` carry the date choice as `date_set`, `days_ahead`, `weekday` and `time_of_day`.
 
 To build the app with analytics, put `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` in `.env` (names are in `.env.example`) and run `python web/build.py`. With no token the app builds and runs normally and sends nothing. The project token is public by design; never use a personal API key (`phx_...`).
 
 ### Streamlit app analytics
-`streamlit_app.py` also sends PostHog events from the server (`app_opened`, `answers_prefilled`, `picks_shown`, `find_clicked_empty`, `recommend_failed`, `rate_limited`) through `analytics.py`, using the same `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` from `.env`. Each browser session gets a random anonymous id. Typed text is never sent, only `text_length`. With no token set it does nothing.
+`streamlit_app.py` also sends PostHog events from the server (`app_opened`, `answers_prefilled`, `picks_shown`, `featured_shown`, `find_clicked_empty`, `recommend_failed`, `rate_limited`) through `analytics.py`, using the same `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` from `.env`. Each browser session gets a random anonymous id. Typed text is never sent, only `text_length`. With no token set it does nothing.
 
 ## Spending caps and rate limits
 - **Claude spend cap:** set a hard monthly limit in the Claude Console (Settings → Limits) so a bug or abuse can never cost more than that.
