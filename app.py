@@ -114,6 +114,11 @@ def load_shows():
     return json.loads(read("shows.json"))["shows"]
 
 
+def load_featured():
+    """This week's best seller (set by the Monday catalog task) for the picks shown before anyone asks."""
+    return json.loads(read("shows.json")).get("featured") or {}
+
+
 def min_age(show):
     m = re.search(r"(\d+)\+", show.get("age", ""))
     return int(m.group(1)) if m else 0
@@ -224,6 +229,65 @@ def catalog_fields(show):
         "official_url": show.get("official_url"),
         "official_url_kind": show.get("official_url_kind"),
     }
+
+
+# ---------------------------------------------------------------- deals and first-load picks
+# Same rules as activeDeals and featuredPicks in web/recommender.js.
+
+def _short(iso):
+    d = dt.date.fromisoformat(iso)
+    return f"{d.strftime('%b')} {d.day}"
+
+
+def active_deals(show, today):
+    """Time-limited deals still running on `today` (ISO date); a deal's end date is inclusive. Cheapest first."""
+    live = [d for d in show.get("deals") or [] if d and d.get("ends") and d["ends"] >= today]
+    return sorted(live, key=lambda d: (d.get("from_price") or float("inf"), -(d.get("pct_off") or 0)))
+
+
+def _newness(show, today):
+    """Opening night, or for a show still in previews, the night it opens (so previews rank newest)."""
+    if show.get("status") == "previews" and show.get("opens"):
+        return show["opens"]
+    d = show.get("opened") or (show.get("opens") if show.get("opens") and show["opens"] <= today else None)
+    return d if d and d <= today else None
+
+
+def featured_picks(shows, featured, today, exclude=()):
+    """Before anyone asks: this week's best seller, the newest show (in previews counts) and the best current deal.
+    Seen shows are left out; empty slots go to first-timer favorites."""
+    skip = set(exclude or ())
+    pool = [s for s in shows if s.get("status") != "closed" and s["title"] not in skip
+            and not (s.get("closes") and s["closes"] < today)]
+    used, out = set(), []
+
+    def add(show, kind, label, why):
+        if show and show["title"] not in used and len(out) < 3:
+            used.add(show["title"])
+            out.append({**catalog_fields(show), "genre": show["genre"], "featured": kind, "featured_label": label,
+                        "why_it_fits": why, "fits_all_limits": True})
+
+    bs = (featured or {}).get("best_seller") or {}
+    best = next((s for s in pool if s["title"] == bs.get("title")), None)
+    if best:
+        gross = f" (${bs['gross'] / 1e6:.2f} million)" if bs.get("gross") else ""
+        add(best, "best_seller", "Best seller", f"The top-grossing show on Broadway for the week ending {_short(bs['week_ending'])}{gross}.")
+    newest = sorted((s for s in pool if _newness(s, today) and s["title"] not in used), key=lambda s: _newness(s, today), reverse=True)
+    if newest:
+        d = _newness(newest[0], today)
+        add(newest[0], "new", "New on Broadway", f"Brand new: in previews now, with opening night on {_short(d)}." if d > today
+            else f"The newest show on Broadway: it opened {_short(d)}.")
+    deal_shows = sorted(
+        (s for s in pool if s["title"] not in used and active_deals(s, today)),
+        key=lambda s: (active_deals(s, today)[0].get("from_price") or float("inf"), -(active_deals(s, today)[0].get("pct_off") or 0),
+                       0 if s.get("first_timer") else 1, min_age(s), -len(s.get("groups") or []), s["title"]))
+    if deal_shows:
+        d = active_deals(deal_shows[0], today)[0]
+        add(deal_shows[0], "deal", "Deal right now", f"The best deal running right now. {d['text']}, through {_short(d['ends'])}.")
+    for s in pool:
+        if len(out) < 3 and s.get("first_timer"):
+            add(s, "favorite", "Crowd favorite", "A crowd-pleaser that suits most first-timers.")
+    return out
 
 
 # ---------------------------------------------------------------- pre-filling the form from free text

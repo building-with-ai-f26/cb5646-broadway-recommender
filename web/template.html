@@ -202,6 +202,14 @@ button.line:hover { background: var(--accent-soft); }
 .heads svg { width: 20px; height: 20px; flex: none; margin-top: 2px; fill: none; stroke: var(--standby); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .heads p { margin: 2px 0 0; }
 .chip.genre { background: transparent; }
+.status.feat { color: var(--accent); background: var(--accent-soft); }
+.about { margin: 0; font-size: 1rem; line-height: 1.45; text-wrap: pretty; }
+.deals { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--go); border-radius: 10px; background: var(--go-soft); }
+.deals h4 { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--go); font: 700 .92rem/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .04em; }
+.deals h4 svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.deals p { margin: 0; text-wrap: pretty; }
+.deals .ends { font-weight: 700; white-space: nowrap; }
+.deals a { color: var(--ink); font-size: .9rem; }
 
 /* required badges, slider, empty state */
 .req { display: inline-block; margin-left: 8px; padding: 1px 8px; border: 1px solid var(--accent); border-radius: 6px; color: var(--accent); font: 600 .74rem/1.5 var(--font-body); vertical-align: .12em; }
@@ -235,7 +243,7 @@ button.line:hover { background: var(--accent-soft); }
   .info { display: contents; }
   .cover { grid-column: 1; grid-row: 1 / span 2; }
   .info > h3, .info > .tags { grid-column: 2; }
-  .info > .facts, .info > .fine, .info > .official, .info > .card-actions, .info > .why, .info > .heads { grid-column: 1 / -1; }
+  .info > .facts, .info > .fine, .info > .official, .info > .card-actions, .info > .why, .info > .heads, .info > .about, .info > .deals { grid-column: 1 / -1; }
   .card-actions .official { flex: 1 1 100%; }
   .facts { grid-template-columns: 1fr 1fr; gap: 12px 14px; }
     .info h3 { font-size: 1.35rem; }
@@ -385,6 +393,7 @@ button.line:hover { background: var(--accent-soft); }
 <script>
 const CATALOG = /*__CATALOG__*/null;
 const SHOWS = CATALOG.filter((s) => s.status !== "closed"); // closed shows stay in the file but are never shown
+const FEATURED = /*__FEATURED__*/null; // this week's best seller, for the picks shown before anyone answers
 const POSTHOG = /*__POSTHOG__*/null;
 </script>
 <script>
@@ -625,6 +634,7 @@ const POSTHOG = /*__POSTHOG__*/null;
     "The Fantasticks": ["wall", "#241a4a", "#7a5fc0", "#0f0a26", "#fff4c4"],
     "Much Ado About Nothing": ["masks", "#d98a3a", "#f7d9a0", "#5a2a0e", "#fff6e0"],
     "Galileo": ["quill", "#0a0f2a", "#2c3a7a", "#05081a", "#ffe9a0"],
+    "Inter Alia": ["scales", "#2a1420", "#6a3a52", "#12070d", "#f3dfc8"],
     "Blue Man Group: A New Holiday Surprise": ["dancefloor", "#0a1a3a", "#1f6fd0", "#040a1a", "#9fe8ff"],
     "It's a Wonderful Life: A Live Radio Play": ["house", "#1a2a4a", "#6f8fbf", "#0c1426", "#fff2c8"],
     "Now You See Me Live": ["spotlight", "#12081f", "#4a1f7a", "#06030c", "#ffd84d"],
@@ -819,6 +829,7 @@ const POSTHOG = /*__POSTHOG__*/null;
     people: '<circle cx="9" cy="8.500" r="3"/><path d="M3 20c.5-3.600 2.800-5.500 6-5.500s5.500 1.900 6 5.500M16 6a3 3 0 0 1 0 5.800M18 14.800c1.700.8 2.700 2.400 3 5.200"/>',
     ticket: '<path d="M3 9a2.500 2.500 0 0 0 0 6v3h18v-3a2.500 2.500 0 0 1 0-6V6H3z"/><path d="M14 6v12" stroke-dasharray="2 2.500"/>',
     alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4.500M12 17.500h.01"/>',
+    tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.500" cy="8.500" r="1.500"/>',
   };
   const fiSvg = (n) => `<svg viewBox="0 0 24 24" aria-hidden="true">${FI[n]}</svg>`;
 
@@ -837,13 +848,32 @@ const POSTHOG = /*__POSTHOG__*/null;
     info.append(el("h3", "", p.title));
 
     const tags = el("div", "tags");
-    const st = el("span", "status " + (p.fits_all_limits ? "go" : "standby"));
-    st.append(el("span", "lamp " + (p.fits_all_limits ? "go" : "standby")), document.createTextNode(p.fits_all_limits ? "Go: fits all your limits" : "Standby: near miss"));
+    const st = el("span", "status " + (p.featured ? "feat" : p.fits_all_limits ? "go" : "standby"));
+    if (p.featured) st.append(document.createTextNode(p.featured_label));
+    else st.append(el("span", "lamp " + (p.fits_all_limits ? "go" : "standby")), document.createTextNode(p.fits_all_limits ? "Go: fits all your limits" : "Standby: near miss"));
     tags.append(st, el("span", "chip genre", p.genre === "play" ? "Play" : "Musical"));
     if (p.rush_or_lottery) tags.append(el("span", "chip rush", "Rush or lottery often available"));
     if (p.status === "previews" && p.opens) tags.append(el("span", "chip soon", "In previews, opens " + fmtDate(p.opens)));
     if (p.date && p.performances && p.performances.length) tags.append(el("span", "chip when", R.fmtDay(p.date) + " · " + p.performances.map(R.fmtTime).join(" & ")));
     info.append(tags);
+    if (show.about) info.append(el("p", "about", show.about));
+    const deals = R.activeDeals(show, TODAY).slice(0, 2);
+    if (deals.length) {
+      const box = el("section", "deals"); const h = el("h4"); h.innerHTML = fiSvg("tag");
+      h.append(document.createTextNode(deals.length > 1 ? "Deals right now" : (deals[0].label || "Deal") + " deal"));
+      box.append(h);
+      for (const d of deals) {
+        const line = el("p"); line.append(document.createTextNode(d.text + ". "), el("span", "ends", "Ends " + fmtDate(d.ends) + "."));
+        if (d.source) {
+          const a = el("a", "", "Details"); a.href = d.source; a.target = "_blank"; a.rel = "noopener";
+          a.setAttribute("aria-label", `Deal details for ${p.title} (opens in a new tab)`);
+          a.addEventListener("click", () => track("deal_clicked", { title: p.title, seller: d.seller || null, ends: d.ends, featured: p.featured || null }));
+          line.append(document.createTextNode(" "), a);
+        }
+        box.append(line);
+      }
+      info.append(box);
+    }
 
     const facts = el("dl", "facts");
     const fact = (ic, k, v, cls) => { const d = el("div", "fact" + (cls ? " " + cls : "")); const dt = el("dt"); dt.innerHTML = fiSvg(ic); dt.append(document.createTextNode(k)); d.append(dt, el("dd", "", v)); facts.append(d); };
@@ -854,7 +884,7 @@ const POSTHOG = /*__POSTHOG__*/null;
     info.append(facts);
     if (show.price_basis) info.append(el("p", "fine", show.price_basis));
 
-    const why = el("section", "why"); why.append(el("h4", "", "Why it fits"), el("p", "", p.why_it_fits)); info.append(why);
+    const why = el("section", "why"); why.append(el("h4", "", p.featured ? "Why it's here" : "Why it fits"), el("p", "", p.why_it_fits)); info.append(why);
     const heads = el("div", "heads"); heads.innerHTML = fiSvg("alert");
     const hb = el("div"); hb.append(el("h4", "", "Heads up"), el("p", "", p.caution)); heads.append(hb); info.append(heads);
     // The call to action comes last: the person has read why it fits and the heads-up, and is ready to act.
@@ -864,7 +894,7 @@ const POSTHOG = /*__POSTHOG__*/null;
       a.href = p.official_url; a.target = "_blank"; a.rel = "noopener";
       a.append(document.createTextNode("Get tickets on the official site"), el("span", "", " ↗"));
       a.setAttribute("aria-label", `${a.textContent.replace(" ↗", "")}: ${p.title} (opens in a new tab)`);
-      a.addEventListener("click", () => track("official_link_clicked", { title: p.title, rank: p.rank, with_date: !!p.date }));
+      a.addEventListener("click", () => track("official_link_clicked", { title: p.title, rank: p.rank, with_date: !!p.date, featured: p.featured || null }));
       actions.append(a);
     }
     const seenBtn = el("button", "seenbtn"); seenBtn.type = "button";
@@ -894,6 +924,7 @@ const POSTHOG = /*__POSTHOG__*/null;
 
   function render(result, input) {
     lastResult = result;
+    $("resultsTitle").textContent = "Your picks";
     $("picks").replaceChildren();
     $("notices").replaceChildren();
     result.picks.forEach((p, i) => $("picks").append(card(p, i)));
@@ -930,12 +961,28 @@ const POSTHOG = /*__POSTHOG__*/null;
       track("picks_shown", props);
     }
   }
+  /** Before the required questions are answered: this week's best seller, newest show and best deal. */
+  let featuredSent = false;
   function renderEmpty() {
-    lastResult = null; hasPicks = false; refreshJump(); lastPicksKey = "";
+    hasPicks = false; refreshJump(); lastPicksKey = "";
     $("picks").replaceChildren(); $("notices").replaceChildren();
-    $("empty").hidden = false; $("scope").hidden = true; $("ruled").hidden = true;
+    $("empty").hidden = false; $("ruled").hidden = true;
     $("actions").hidden = true; $("copybox").hidden = true;
-    $("status").textContent = "Choose who is going, a mood and a price to see your picks.";
+    let picks = R.featuredPicks(SHOWS, FEATURED, TODAY, [...seen, ...skipped]);
+    freshTitle = null;
+    if (lastResult && lastResult.featured) { // after "I've seen it" or ×, the other cards stay where they were
+      const prev = lastResult.picks.map((p) => p.title);
+      picks = keepSlots(prev, picks);
+      const added = picks.find((p) => !prev.includes(p.title)); freshTitle = added ? added.title : null;
+    }
+    lastResult = picks.length ? { picks, featured: true } : null;
+    $("resultsTitle").textContent = picks.length ? "Popular right now" : "Your picks";
+    $("scope").hidden = !picks.length;
+    $("scope").textContent = "This week's best seller, the newest show and the best deal running. Answer the questions and these change to picks made for you.";
+    picks.forEach((p, i) => $("picks").append(card(p, i)));
+    fitCovers();
+    $("status").textContent = picks.length ? `Popular right now: ${picks.map((p) => p.title).join(", ")}. Choose who is going, a mood, musical or play and a price to see your own picks.` : "Choose who is going, a mood and a price to see your picks.";
+    if (picks.length && !featuredSent) { featuredSent = true; track("featured_shown", { picks: picks.map((p) => p.title), kinds: picks.map((p) => p.featured) }); }
   }
 
   // ---------------------------------------------------------------- seen and skipped shows
@@ -1036,7 +1083,7 @@ const POSTHOG = /*__POSTHOG__*/null;
     const input = toInput();
     const result = R.recommendLocal(SHOWS, input, { offset });
     freshTitle = null;
-    if (stable && lastResult && lastResult.picks.length) {
+    if (stable && lastResult && !lastResult.featured && lastResult.picks.length) { // first-load picks never pin personal picks in place
       const prev = lastResult.picks.map((p) => p.title);
       result.picks = keepSlots(prev, result.picks);
       const added = result.picks.find((p) => !prev.includes(p.title));
