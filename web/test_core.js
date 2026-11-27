@@ -239,9 +239,9 @@ const sloppyAi = async () =>
     const r = R.recommendLocal(SHOWS, { ...base, exclude: many });
     assert.ok(r.picks.every((p) => !many.includes(p.title)));
   });
-  check("catalog sanity: 36 shows, unique titles, price_low <= price_high", () => {
-    assert.strictEqual(SHOWS.length, 36);
-    assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, 36);
+  check("catalog sanity: 37 shows, unique titles, price_low <= price_high", () => {
+    assert.strictEqual(SHOWS.length, 37);
+    assert.strictEqual(new Set(SHOWS.map((s) => s.title)).size, SHOWS.length);
     assert.ok(SHOWS.every((s) => s.price_low <= s.price_high && s.runtime_min > 0));
   });
 
@@ -258,6 +258,44 @@ const sloppyAi = async () =>
       assert.deepStrictEqual(have.sort(), want.sort(), rel + " script hashes are out of date; run python web/build.py");
       assert.ok(!/\son[a-z]+="/i.test(html.replace(/<script>[\s\S]*?<\/script>/g, "")), rel + " has an inline on*= handler, which the policy blocks");
     }
+  });
+
+  check("about and deals: every show has an about line; every deal has text, a source and a real end date", () => {
+    const data = require("../data/shows.json");
+    for (const s of data.shows) {
+      assert.ok(s.about && s.about.length >= 40 && s.about.length <= 200, s.title + " needs a 1-2 sentence about");
+      for (const d of s.deals || []) {
+        assert.ok(d.text && d.source && /^https:\/\//.test(d.source), s.title + " deal needs text and a source link");
+        assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(d.ends), s.title + " deal needs an end date");
+      }
+    }
+  });
+
+  check("deals disappear the day after they end", () => {
+    const show = { deals: [{ text: "A", ends: "2026-11-30", from_price: 70 }, { text: "B", ends: "2026-12-06", from_price: 59 }] };
+    assert.deepStrictEqual(R.activeDeals(show, "2026-11-27").map((d) => d.text), ["B", "A"]); // cheapest first
+    assert.deepStrictEqual(R.activeDeals(show, "2026-11-30").map((d) => d.text), ["B", "A"]); // end date is inclusive
+    assert.deepStrictEqual(R.activeDeals(show, "2026-12-01").map((d) => d.text), ["B"]);
+    assert.deepStrictEqual(R.activeDeals(show, "2026-12-07"), []);
+  });
+
+  check("first-load picks: best seller, newest show (previews count), best deal; seen shows are replaced; no closed shows", () => {
+    const data = require("../data/shows.json");
+    const f = R.featuredPicks(data.shows, data.featured, "2026-11-27", []);
+    assert.strictEqual(f.length, 3);
+    assert.deepStrictEqual(f.map((p) => p.featured), ["best_seller", "new", "deal"]);
+    assert.strictEqual(f[0].title, data.featured.best_seller.title);
+    const previews = data.shows.filter((s) => s.status === "previews" && s.opens);
+    assert.ok(previews.length, "test needs a show in previews");
+    assert.strictEqual(f[1].title, previews.sort((a, b) => b.opens.localeCompare(a.opens))[0].title, "a show in previews counts as the newest");
+    assert.match(f[1].why_it_fits, /in previews now/);
+    assert.ok(R.activeDeals(data.shows.find((s) => s.title === f[2].title), "2026-11-27").length, "deal pick must have an active deal");
+    const g = R.featuredPicks(data.shows, data.featured, "2026-11-27", [f[0].title, f[2].title]);
+    assert.strictEqual(g.length, 3);
+    assert.ok(!g.some((p) => p.title === f[0].title || p.title === f[2].title), "seen shows never appear");
+    const later = R.featuredPicks(data.shows, data.featured, "2027-06-01", []);
+    for (const p of later) { const s = data.shows.find((x) => x.title === p.title); assert.ok(!s.closes || s.closes >= "2027-06-01", p.title + " has closed"); }
+    assert.ok(!later.some((p) => p.featured === "deal"), "no deal pick once every deal has ended");
   });
 
   check("analytics privacy: both pages start PostHog with session replay masking every form field", () => {

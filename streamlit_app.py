@@ -5,7 +5,8 @@ import datetime as dt
 import time
 
 from analytics import new_visitor_id, track
-from app import DEALBREAKERS, LONG_RUNTIME_MIN, RateLimiter, fmt_day, fmt_time, infer_answers, load_shows, recommend_shows
+from app import (DEALBREAKERS, LONG_RUNTIME_MIN, RateLimiter, active_deals, featured_picks, fmt_day, fmt_time, infer_answers,
+                 load_featured, load_shows, recommend_shows)
 
 st.set_page_config(page_title="Broadway Concierge", page_icon="🎭")
 
@@ -142,7 +143,53 @@ with col2:
               "'no intermission' means you only want shows that run straight through."),
     )
 
-if st.button("Find my shows", type="primary"):
+CATALOG = {s["title"]: s for s in load_shows()}
+TODAY = dt.date.today().isoformat()
+
+
+def show_card(i, p):
+    """One pick: title, what the show is about, any deal running now, why it fits, and the official site."""
+    show = CATALOG.get(p["title"], {})
+    with st.container(border=True):
+        if p.get("featured"):
+            label = f"  ·  {p['featured_label']}"
+        else:
+            label = "" if p["fits_all_limits"] else "  ·  ⚠️ near miss"
+        st.subheader(f"{i}. {p['title']}{label}")
+        st.caption(p["theater"])
+        if show.get("about"):
+            st.write(show["about"])
+        deals = active_deals(show, TODAY)[:2]
+        if deals:
+            st.success("\n\n".join(f"🏷️ **{d.get('label', 'Deal')}:** {d['text']}. **Ends {fmt_day(d['ends'])}.** [Details]({d['source']})"
+                                     for d in deals))
+        st.write(("**Why it's here:** " if p.get("featured") else "") + p["why_it_fits"])
+        if p.get("caution"):
+            st.write(f"**Heads up:** {p['caution']}")
+        st.write(f"**Price:** {p['price_range']}")
+        if p.get("performances"):
+            st.write(f"**{fmt_day(p['date'])}:** " + " & ".join(fmt_time(t) for t in p["performances"]))
+        if p["rush_or_lottery"]:
+            st.write("🎟️ Rush or lottery tickets are often available. Check the official show site.")
+        if p.get("official_url"):
+            st.link_button("Get tickets on the official site ↗", p["official_url"])
+
+
+clicked = st.button("Find my shows", type="primary")
+if not clicked:
+    # Before anyone asks: this week's best seller, the newest show and the best deal (no Claude call, no cost).
+    picks = featured_picks(list(CATALOG.values()), load_featured(), TODAY, exclude=seen)
+    if picks:
+        st.subheader("Popular right now")
+        st.caption("This week's best seller, the newest show and the best deal running. "
+                   "Describe your night and click Find my shows for picks made for you.")
+        if not st.session_state.get("featured_sent"):
+            st.session_state.featured_sent = True
+            track(st.session_state.visitor, "featured_shown", picks=[p["title"] for p in picks], kinds=[p["featured"] for p in picks])
+        for i, p in enumerate(picks, 1):
+            show_card(i, p)
+
+if clicked:
     if not text.strip():
         st.warning("Write a sentence or two about your night first.")
         track(st.session_state.visitor, "find_clicked_empty")
@@ -196,19 +243,7 @@ if st.button("Find my shows", type="primary"):
     if result["message"]:
         st.info(result["message"])
     for i, p in enumerate(result["picks"], 1):
-        with st.container(border=True):
-            label = "" if p["fits_all_limits"] else "  ·  ⚠️ near miss"
-            st.subheader(f"{i}. {p['title']}{label}")
-            st.caption(p["theater"])
-            st.write(p["why_it_fits"])
-            st.write(f"**Heads up:** {p['caution']}")
-            st.write(f"**Price:** {p['price_range']}")
-            if p.get("performances"):
-                st.write(f"**{fmt_day(p['date'])}:** " + " & ".join(fmt_time(t) for t in p["performances"]))
-            if p["rush_or_lottery"]:
-                st.write("🎟️ Rush or lottery tickets are often available. Check the official show site.")
-            if p.get("official_url"):
-                st.link_button("Get tickets on the official site ↗", p["official_url"])
+        show_card(i, p)
     if result["assumptions"]:
         st.caption(f"Assumptions we made: {result['assumptions']}")
     st.caption("Prices are typical ranges from a hand-built catalog, not live. Always confirm on the official ticket seller.")

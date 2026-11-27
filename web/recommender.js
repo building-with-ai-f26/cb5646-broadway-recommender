@@ -352,6 +352,57 @@
       why_it_fits: why, caution, fits_all_limits: fits };
   }
 
+  // ------------------------------------------------------------ deals and first-load picks
+
+  /** Time-limited deals still running on `today` (an ISO date); a deal's end date is inclusive. */
+  function activeDeals(show, today) {
+    return (show.deals || []).filter((d) => d && d.ends && d.ends >= today)
+      .sort((a, b) => (a.from_price || Infinity) - (b.from_price || Infinity) || (b.pct_off || 0) - (a.pct_off || 0));
+  }
+
+  function fmtShort(iso) { const dt = isoToDate(iso); return `${MONTHS[dt.getUTCMonth()]} ${dt.getUTCDate()}`; }
+  /** How new a show is: its opening night, or for a show still in previews, the night it opens (so previews rank newest). */
+  function newness(show, today) {
+    if (show.status === "previews" && show.opens) return show.opens;
+    const d = show.opened || (show.opens && show.opens <= today ? show.opens : null);
+    return d && d <= today ? d : null;
+  }
+
+  /**
+   * The 3 picks shown before anyone answers: this week's best seller, the newest show (in previews counts) and the best
+   * current deal. Seen or skipped shows (`exclude`) are left out; an empty slot is filled with the next
+   * best show of that kind, then with first-timer favorites.
+   */
+  function featuredPicks(allShows, featured, today, exclude) {
+    const skip = new Set(exclude || []);
+    const shows = openShows(allShows).filter((s) => !skip.has(s.title) && !(s.closes && s.closes < today));
+    const used = new Set(), out = [];
+    const add = (show, kind, label, why) => { if (show && !used.has(show.title) && out.length < 3) { used.add(show.title); out.push({ show, kind, label, why }); } };
+    const bs = (featured && featured.best_seller) || {};
+    const best = shows.find((s) => s.title === bs.title);
+    if (best) {
+      const gross = bs.gross ? ` ($${(bs.gross / 1e6).toFixed(2)} million)` : "";
+      add(best, "best_seller", "Best seller", `The top-grossing show on Broadway for the week ending ${fmtShort(bs.week_ending)}${gross}.`);
+    }
+    const newest = shows.filter((s) => newness(s, today) && !used.has(s.title))
+      .sort((a, b) => newness(b, today).localeCompare(newness(a, today)))[0];
+    if (newest) {
+      const d = newness(newest, today);
+      add(newest, "new", "New on Broadway", d > today ? `Brand new: in previews now, with opening night on ${fmtShort(d)}.` : `The newest show on Broadway: it opened ${fmtShort(d)}.`);
+    }
+    const dealShows = shows.filter((s) => !used.has(s.title) && activeDeals(s, today).length).sort((a, b) => {
+      const da = activeDeals(a, today)[0], db = activeDeals(b, today)[0];
+      return (da.from_price || Infinity) - (db.from_price || Infinity) || (db.pct_off || 0) - (da.pct_off || 0)
+        || (b.first_timer ? 1 : 0) - (a.first_timer ? 1 : 0) || minAge(a) - minAge(b) || (b.groups || []).length - (a.groups || []).length || a.title.localeCompare(b.title);
+    });
+    if (dealShows[0]) {
+      const d = activeDeals(dealShows[0], today)[0];
+      add(dealShows[0], "deal", "Deal right now", `The best deal running right now. ${d.text}, through ${fmtShort(d.ends)}.`);
+    }
+    for (const s of shows) if (out.length < 3 && s.first_timer) add(s, "favorite", "Crowd favorite", "A crowd-pleaser that suits most first-timers.");
+    return out.map((f) => ({ ...makePick(f.show, f.why, cautionText(f.show), true), featured: f.kind, featured_label: f.label }));
+  }
+
   // ------------------------------------------------------------ the recommender
 
   function prepare(shows, input) {
@@ -632,5 +683,6 @@
     DEALBREAKERS, LONG_RUNTIME_MIN, SHOW_TYPES, inferAnswers, openShows, available,
     timesOn, fmtDay, fmtTime, addDays, weekdayOf, isHolidayWeek, todayIso, DAY_NAMES, minAge, parseAges, violations, closeness, priceText,
     analyzeText, scoreShow, recommendLocal, recommendWithAI, buildAiPrompt, prepare, parseJson, runtimeText, previewsNote,
+    activeDeals, featuredPicks,
   };
 });

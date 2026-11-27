@@ -26,7 +26,9 @@ def read_env(name):
     return ""
 
 
-shows = json.loads((ROOT / "data" / "shows.json").read_text())["shows"]
+data = json.loads((ROOT / "data" / "shows.json").read_text())
+shows = data["shows"]
+featured = json.dumps(data.get("featured") or {}, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 template = (ROOT / "web" / "template.html").read_text()
 core = (ROOT / "web" / "recommender.js").read_text()
@@ -44,8 +46,9 @@ else:
           "this causes events to be silently missed. This warning stops appearing once "
           "POSTHOG_PROJECT_TOKEN and POSTHOG_HOST are configured.")
 
-assert all(m in template for m in ("/*__CATALOG__*/null", "/*__CORE__*/", "/*__POSTHOG__*/null"))
+assert all(m in template for m in ("/*__CATALOG__*/null", "/*__FEATURED__*/null", "/*__CORE__*/", "/*__POSTHOG__*/null"))
 page = (template.replace("/*__CATALOG__*/null", catalog)
+        .replace("/*__FEATURED__*/null", featured)
         .replace("/*__POSTHOG__*/null", posthog)
         .replace("/*__CORE__*/", core.replace("</script", "<\\/script")))
 

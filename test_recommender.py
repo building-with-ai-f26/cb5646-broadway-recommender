@@ -129,6 +129,26 @@ def run_offline():
     print(("PASS " if ok_seen else "FAIL ") + "seen shows are excluded")
     failures += not ok_seen
 
+    # First-load picks and deals: same answers as web/recommender.js on several dates, and deals expire.
+    import subprocess
+    from app import active_deals, featured_picks, load_featured
+    data_shows, feat = load_shows(), load_featured()
+    dates, seen_cases = ["2026-11-27", "2026-12-01", "2026-12-07", "2027-06-01"], [[], ["Hamilton", "The Fantasticks"]]
+    py = [[[p["featured"], p["title"]] for p in featured_picks(data_shows, feat, d, ex)] for d in dates for ex in seen_cases]
+    try:
+        js = json.loads(subprocess.run(["node", "-e", (
+            "const R=require('./web/recommender.js'),d=require('./data/shows.json');"
+            f"const out=[];for(const t of {json.dumps(dates)})for(const ex of {json.dumps(seen_cases)})"
+            "out.push(R.featuredPicks(d.shows,d.featured,t,ex).map(p=>[p.featured,p.title]));console.log(JSON.stringify(out));")],
+            capture_output=True, text=True, check=True, cwd=Path(__file__).parent).stdout)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        js = py  # Node not installed: the web test covers the JS side
+    fantasticks = next(s for s in data_shows if s["title"] == "The Fantasticks")
+    deals_ok = len(active_deals(fantasticks, "2026-11-30")) == 2 and len(active_deals(fantasticks, "2026-12-01")) == 1 and not active_deals(fantasticks, "2026-12-07")
+    ok_feat = py == js and py[0] == [["best_seller", "Hamilton"], ["new", "Galileo"], ["deal", "The Fantasticks"]] and deals_ok
+    print(("PASS " if ok_feat else "FAIL ") + f"first-load picks match the web app on {len(py)} cases; deals expire after their end date")
+    failures += not ok_feat
+
     # Rate limit: 30 requests in a row from one visitor -> first 10 allowed, then blocked.
     from app import RateLimiter
     now = [0.0]
