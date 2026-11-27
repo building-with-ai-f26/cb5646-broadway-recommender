@@ -365,6 +365,16 @@ Secondary feature (built in the command-line prototype, not yet in the web app):
             </ul>
           </li>
           <li><strong>Things learned with AI:</strong> Security depends on what kind of app you have. Mine has no sign-in and no database, so the real risks were spending (a public Claude route), secret keys and the coding agent itself, not stolen user data. A test is only useful if it actually exercises what it claims to, so check a surprising pass before trusting it. Setting a rule in code (like replay masking) is safer than relying on a service's default. Turning my agent's mistakes into written rules in AGENTS.md keeps them from happening twice.</li>
+          <li><strong>Security check (submission):</strong>
+            <ul>
+              <li><strong>Repo:</strong> <a href="https://github.com/building-with-ai-f26/cb5646-broadway-recommender">github.com/building-with-ai-f26/cb5646-broadway-recommender</a></li>
+              <li><strong>Lane:</strong> Beginner</li>
+              <li><strong>Security write-up:</strong> <a href="https://github.com/building-with-ai-f26/cb5646-broadway-recommender/blob/main/SECURITY.md">SECURITY.md</a> (app type, 13 checks, fixes and remaining issues)</li>
+              <li><strong>Test result:</strong> my app is "AI with no database", so the fitting test is the rate limit on the route that calls Claude. In the real Streamlit app, clicking "Find my shows" 11 times in a row gave picks for clicks 1 to 10, and click 11 was blocked with "Please try again in about 10 min." (Streamlit's equivalent of a <code>429</code>; Claude was never called). Claude was replaced by a fake for this run, so it cost nothing. The automated version (<code style="overflow-wrap:anywhere">python tests/test_rate_limit_streamlit.py</code>) clicks 30 times: 10 allowed, 20 blocked.
+                <img src="security-rate-limit-test.png" alt="Broadway Concierge Streamlit app after the 11th click on Find my shows for a date night under $150: a yellow warning under the button reads You've asked for a lot of picks in a short time. Please try again in about 10 min." style="max-width:100%; border:1px solid #e5e7eb; border-radius:8px; margin-top:8px;" />
+              </li>
+            </ul>
+          </li>
           <li><strong>Cost & time this week:</strong> $6 · 5 hours. The $6 is Claude API spend this week (my own key, used by the local Streamlit app). The Nov 21 security and hosting work added an hour and $0: every rate-limit test used a fake Claude, GitHub secret scanning, push protection and Dependabot are free for public repos, and building still ran on the same Claude subscription. PostHog free tier; GitHub Pages free. Cumulative spend stays $27.78, now with a $10/month cap on future Claude API spend.</li>
         </ul>
       </div>
