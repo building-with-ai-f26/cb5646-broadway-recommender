@@ -180,14 +180,28 @@ if not clicked:
     # Before anyone asks: this week's best seller, the newest show and the best deal (no Claude call, no cost).
     picks = featured_picks(list(CATALOG.values()), load_featured(), TODAY, exclude=seen)
     if picks:
-        st.subheader("Popular right now")
-        st.caption("This week's best seller, the newest show and the best deal running. "
-                   "Describe your night and click Find my shows for picks made for you.")
+        st.markdown("#### Popular right now  \n:gray[Not personalized yet. Describe your night and click **Find my shows** for picks made for you.]")
         if not st.session_state.get("featured_sent"):
             st.session_state.featured_sent = True
             track(st.session_state.visitor, "featured_shown", picks=[p["title"] for p in picks], kinds=[p["featured"] for p in picks])
-        for i, p in enumerate(picks, 1):
-            show_card(i, p)
+        cols = st.columns(len(picks))
+        for i, (col, p) in enumerate(zip(cols, picks), 1):
+            show = CATALOG.get(p["title"], {})
+            with col, st.container(border=True):
+                st.caption(f"**{p['featured_label'].upper()}**")
+                st.markdown(f"**{p['title']}**")
+                if show.get("about"):
+                    st.caption(show["about"])
+                deal = (active_deals(show, TODAY) or [None])[0]
+                if deal:
+                    st.markdown(f":green-background[🏷️ Deal · ends {fmt_day(deal['ends'])}]")
+                with st.expander("Details"):
+                    st.write(p["why_it_fits"])
+                    st.write(f"**Price:** {p['price_range']}")
+                    if deal:
+                        st.write(f"**{deal.get('label', 'Deal')}:** {deal['text']}. [Details]({deal['source']})")
+                    if p.get("official_url"):
+                        st.link_button("Official site ↗", p["official_url"])
 
 if clicked:
     if not text.strip():
